@@ -85,13 +85,31 @@ serve(async (req: Request) => {
     );
   }
 
+  // Create client for user authentication using anon key  
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-  const supabase = createClient(supabaseUrl, anonKey, {
+  const userSupabase = createClient(supabaseUrl, anonKey, {
     global: {
       headers: { Authorization: authHeader },
     },
   });
+
+  // Verify user authentication
+  const {
+    data: { user },
+    error: authError,
+  } = await userSupabase.auth.getUser();
+
+  if (authError || !user) {
+    return jsonResponse(
+      { error: "Unauthorized", code: "AUTH_UNAUTHORIZED" },
+      { status: 401 },
+    );
+  }
+
+  // Create service role client for database operations (bypasses RLS)
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
 
   let body: OnboardingRequest;
   try {
@@ -111,19 +129,7 @@ serve(async (req: Request) => {
     );
   }
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return jsonResponse(
-      { error: "Unauthorized", code: "AUTH_UNAUTHORIZED" },
-      { status: 401 },
-    );
-  }
-
-  const { data, error } = await supabase.rpc("onboarding_create_company_and_owner", {
+  const { data, error } = await adminSupabase.rpc("onboarding_create_company_and_owner", {
     p_user_id: user.id,
     p_email: user.email,
     p_company_name: company_name,
