@@ -25,9 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.className} antialiased bg-[#131B41] text-[#FFFFF6] min-h-svh overflow-x-hidden`}
-      >
+      <body className={`${geistSans.className} antialiased bg-gray-50 text-gray-900 min-h-screen overflow-x-hidden`}>
         {children}
       </body>
     </html>

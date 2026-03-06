@@ -10,18 +10,28 @@ type AppShellProps = {
 export function AppShell({ user, children }: AppShellProps) {
   return (
     <>
-      <div className="hidden md:flex min-h-svh bg-[#131B41] text-[#FFFFF6] overflow-x-hidden">
+      {/* Desktop Layout */}
+      <div className="hidden lg:flex min-h-screen bg-white">
         <Sidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="h-14 px-4 flex items-center justify-end border-b border-white/10">
-            <span className="text-sm text-white/80">{user?.email}</span>
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-16 px-6 flex items-center justify-between border-b border-gray-200 bg-white">
+            <h1 className="text-xl font-semibold text-gray-900">Ergon Management</h1>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">{user?.email}</span>
+            </div>
           </header>
-          <main className="flex-1 overflow-y-auto px-4 py-6 bg-[#131B41]">
-            <div className="max-w-6xl mx-auto">{children}</div>
+          <main className="flex-1 overflow-y-auto bg-gray-50">
+            <div className="h-full px-6 py-8">
+              {children}
+            </div>
           </main>
         </div>
       </div>
-      <MobileShell>{children}</MobileShell>
+
+      {/* Mobile Layout */}
+      <div className="lg:hidden">
+        <MobileShell user={user}>{children}</MobileShell>
+      </div>
     </>
   );
 }
