@@ -52,6 +52,7 @@ function jsonResponse(body: unknown, init?: ResponseInit) {
     status: init?.status ?? 200,
     headers: {
       "Content-Type": "application/json",
+      ...corsHeaders,
       ...init?.headers,
     },
   });
@@ -75,6 +76,11 @@ async function resolveCompanyId(
 }
 
 serve(async (req: Request) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   if (req.method !== "POST") {
     return jsonResponse(
       { error: "Method not allowed", code: "METHOD_NOT_ALLOWED" },

@@ -73,6 +73,7 @@ function jsonResponse(body: unknown, init?: ResponseInit) {
     status: init?.status ?? 200,
     headers: {
       "Content-Type": "application/json",
+      ...corsHeaders,
       ...init?.headers,
     },
   });
@@ -80,6 +81,11 @@ function jsonResponse(body: unknown, init?: ResponseInit) {
 
 serve(async (req: Request) => {
   const method = req.method.toUpperCase();
+
+  // Handle CORS preflight requests
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
