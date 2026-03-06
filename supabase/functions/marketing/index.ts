@@ -66,7 +66,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.0";
 import {
   runMarketingGraph,
   type MarketingChannel,
-} from "@/lib/marketing/langgraph/graph.ts";
+} from "../../../lib/marketing/langgraph/graph.ts";
 
 type SupabaseClient = ReturnType<typeof createClient>;
 

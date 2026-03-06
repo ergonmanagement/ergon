@@ -21,6 +21,9 @@
  * This file is imported by the `marketing` Edge Function.
  */
 
+/** Declare Deno for TypeScript when this file is type-checked by Next.js (it only runs in Supabase Edge). */
+declare const Deno: { env: { get(key: string): string | undefined } };
+
 export type MarketingChannel = "social_post" | "email" | "sms" | "flyer";
 
 export type MarketingGenerateParams = {

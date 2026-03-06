@@ -1,8 +1,9 @@
+import { Suspense } from "react";
 import { requireAuth } from "@/lib/auth";
 import { DashboardMenu } from "./_components/dashboard-menu";
 import { DashboardClient } from "./_components/dashboard-client";
 
-export default async function DashboardPage() {
+async function DashboardContent() {
   const user = await requireAuth();
   return (
     <>
@@ -19,5 +20,13 @@ export default async function DashboardPage() {
         </div>
       </main>
     </>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
