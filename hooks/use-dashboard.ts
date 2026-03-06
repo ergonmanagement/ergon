@@ -48,28 +48,23 @@ export function useDashboard() {
 
       try {
         const supabase = createClient();
-        
-        // Temporary: Load mock data instead of calling Edge Function
-        console.log('Loading dashboard with mock data (Edge Function bypassed)');
-        
-        // Mock dashboard data
-        const mockData: DashboardPayload = {
-          today_schedule: {
-            events: [],
-            jobs: []
-          },
-          upcoming_jobs: [],
-          new_prospects: [],
-          finance_summary: {
-            revenue: 15750,
-            expenses: 4200,
-            net: 11550
-          },
-          marketing_reminders: []
-        };
+        const { data, error } = await supabase.functions.invoke("dashboard", {
+          method: "GET",
+        });
 
         if (!isMounted) return;
-        setData(mockData);
+
+        if (error || (data && (data as any).error)) {
+          const message =
+            (data as any)?.error ??
+            error?.message ??
+            "Failed to load dashboard.";
+          setError(message);
+          setLoading(false);
+          return;
+        }
+
+        setData(data as DashboardPayload);
         setLoading(false);
       } catch (err) {
         if (!isMounted) return;

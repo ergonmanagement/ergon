@@ -33,24 +33,21 @@ export function useOnboarding() {
         return;
       }
 
-      console.log('Calling onboarding RPC function directly with:', {
-        p_user_id: session.user.id,
-        p_email: session.user.email,
-        p_company_name: companyName,
-        p_service_type: serviceType,
-        p_phone: phone,
+      console.log('Calling onboarding Edge Function with:', {
+        company_name: companyName,
+        service_type: serviceType,
+        phone,
       });
 
-      // Call RPC function directly (temporary workaround)
-      const { data, error } = await supabase.rpc("onboarding_create_company_and_owner", {
-        p_user_id: session.user.id,
-        p_email: session.user.email,
-        p_company_name: companyName,
-        p_service_type: serviceType,
-        p_phone: phone,
+      const { data, error } = await supabase.functions.invoke("onboarding", {
+        body: {
+          company_name: companyName,
+          service_type: serviceType,
+          phone,
+        },
       });
 
-      console.log('RPC Function response:', { data, error });
+      console.log('Edge Function response:', { data, error });
 
       if (error) {
         console.error('Edge Function error:', error);
