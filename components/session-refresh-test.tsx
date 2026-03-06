@@ -34,7 +34,7 @@ export function SessionRefreshTest() {
                     weekStart.setDate(now.getDate() - now.getDay());
                     const weekEnd = new Date(weekStart);
                     weekEnd.setDate(weekStart.getDate() + 6);
-                    
+
                     params.set("from", weekStart.toISOString());
                     params.set("to", weekEnd.toISOString());
 
