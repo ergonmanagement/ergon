@@ -34,6 +34,12 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.0";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-ergon-query",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE"
+};
+
 type JobPhotoRequest = {
   job_id: string;
   content_type: string;
