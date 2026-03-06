@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import DashboardPage from "@/app/dashboard/page";
+import DashboardPage from "@/app/(app)/dashboard/page";
 
 const mockUser = { email: "user@example.com" };
 
@@ -7,11 +7,11 @@ jest.mock("@/lib/auth", () => ({
   requireAuth: jest.fn(() => Promise.resolve(mockUser)),
 }));
 
-jest.mock("@/app/dashboard/_components/dashboard-menu", () => ({
+jest.mock("@/app/(app)/dashboard/_components/dashboard-menu", () => ({
   DashboardMenu: () => <div data-testid="dashboard-menu">Menu</div>,
 }));
 
-jest.mock("@/app/dashboard/_components/dashboard-client", () => ({
+jest.mock("@/app/(app)/dashboard/_components/dashboard-client", () => ({
   DashboardClient: () => (
     <div data-testid="dashboard-client">DashboardClient</div>
   ),

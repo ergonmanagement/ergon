@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ProfileImageUpload } from "@/app/profile/_components/profile-image-upload";
+import { ProfileImageUpload } from "@/app/(app)/profile/_components/profile-image-upload";
 
 jest.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ user: { email: "user@example.com" } }),

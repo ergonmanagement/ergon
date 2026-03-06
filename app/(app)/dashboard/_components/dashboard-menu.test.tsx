@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { DashboardMenu } from "@/app/dashboard/_components/dashboard-menu";
+import { DashboardMenu } from "@/app/(app)/dashboard/_components/dashboard-menu";
 
 describe("DashboardMenu", () => {
   it("renders Menu button", () => {

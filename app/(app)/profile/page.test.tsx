@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import ProfilePage from "@/app/profile/page";
+import ProfilePage from "@/app/(app)/profile/page";
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn() }),
@@ -25,11 +25,11 @@ jest.mock("@/hooks/use-profile", () => ({
   }),
 }));
 
-jest.mock("@/app/dashboard/_components/dashboard-menu", () => ({
+jest.mock("@/app/(app)/dashboard/_components/dashboard-menu", () => ({
   DashboardMenu: () => <div data-testid="dashboard-menu">Menu</div>,
 }));
 
-jest.mock("@/app/profile/_components/profile-image-upload", () => ({
+jest.mock("@/app/(app)/profile/_components/profile-image-upload", () => ({
   ProfileImageUpload: () => <div data-testid="profile-image-upload">Upload</div>,
 }));
 

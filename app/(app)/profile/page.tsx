@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { DashboardMenu } from "@/app/dashboard/_components/dashboard-menu";
-import { ProfileImageUpload } from "@/app/profile/_components/profile-image-upload";
+import { DashboardMenu } from "@/app/(app)/dashboard/_components/dashboard-menu";
+import { ProfileImageUpload } from "@/app/(app)/profile/_components/profile-image-upload";
 import { FormDisplayField } from "@/components/form";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
