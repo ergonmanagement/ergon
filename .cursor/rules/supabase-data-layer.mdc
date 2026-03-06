@@ -1,66 +1,129 @@
 ---
-description: Keep Supabase out of UI; use hooks (client) and server functions (server)
+description: Keep Supabase out of UI; use hooks (client). Edge Functions are the backend API. Next.js routes must be thin proxies only (optional).
 globs: "**/*.tsx,app/**/route.ts"
 alwaysApply: false
 ---
 
-# Supabase and Data Layer
+# Supabase and Data Layer (Edge Functions First)
 
-Supabase (`createClient` from `@/lib/supabase/client` or `server`) must **not** be imported in components or route handlers for auth/data logic.
+This project uses **Supabase Edge Functions as the backend API layer**.
+
+## Core rule
+
+- React components must NOT import Supabase clients directly for auth or data logic.
+- Business logic must live in:
+  - Supabase Edge Functions (primary)
+  - Shared utilities in /lib (pure helpers only)
+- RLS is mandatory and enforces company_id scoping.
+
+---
 
 ## Client (React components)
 
-- **Use custom hooks** in `hooks/` for any Supabase calls (auth, profile, storage).
-- Components import hooks only; they hold form/UI state and call hook functions.
-### Auth and data hooks (`hooks/`)
+### Rules
 
-| Hook | Use for | Returns / API |
-|------|---------|----------------|
-| `useAuth` | Current user, loading | `{ user, loading }` |
-| `useLogin` | Sign in | `login({ email, password })` → `{ login, isLoading, error }` |
-| `useSignUp` | Sign up | `signUp({ email, password, repeatPassword, firstName?, lastName? })` → `{ signUp, isLoading, error }` |
-| `useUpdatePassword` | Set new password | `updatePassword(password)` → `{ updatePassword, isLoading, error }` |
-| `useForgotPassword` | Reset link email | `sendResetEmail(email)` → `{ sendResetEmail, isLoading, error, success }` |
-| `useLogout` | Sign out | `logout()` → `{ logout }` |
-| `useProfile` | Current user profile | `{ profile, loading, error }` (profile_picture_url, first_name, last_name, created_at) |
-| `useProfileImageUpload` | Upload avatar | `upload(file)` → `{ upload, uploading, error }` |
+- Components are UI-only.
+- Components manage form state and rendering.
+- Components call hooks from `/hooks`.
+- Components must NOT call `createClient()` directly.
 
-Components keep form state locally and call these; e.g. `await login({ email, password })` in submit handler.
+### Preferred client pattern
+
+- Hooks call Edge Functions for workflows and writes.
+- Hooks may use Supabase client for simple reads only when:
+  - RLS fully enforces tenant scoping
+  - The query is a straightforward list/detail fetch
+
+### Example
 
 ```tsx
 // ❌ BAD – Supabase in component
 import { createClient } from "@/lib/supabase/client";
 const supabase = createClient();
-await supabase.auth.signInWithPassword({ email, password });
+await supabase.from("jobs").insert({ ... });
 
 // ✅ GOOD – Hook in component
-const { login, isLoading, error } = useLogin();
-await login({ email, password });
+const { createJob, isLoading, error } = useCreateJob();
+await createJob({ ... });
+
+// ✅ ALSO OK (read-only under RLS)
+const { jobs, loading } = useJobsList({ filter: "upcoming" });
 ```
 
-## Server (route handlers, server components)
+---
 
-- **Use server functions** in `lib/auth.ts` (e.g. `requireAuth`, `verifyEmailOtp`) for auth logic.
-- Route handlers and server code call these functions; they do **not** call `createClient()` for that logic.
-- Validation (e.g. OTP type) lives inside the server function, not in the route.
+## Hooks (`/hooks`)
 
-### Server auth functions (`lib/auth.ts`)
+### Rules
 
-| Function | Use for | Signature / return |
-|----------|---------|---------------------|
-| `requireAuth()` | Protect server routes; redirect if not logged in | Returns user (claims); redirects to `/auth/login` if unauthenticated. Use in server components or before rendering protected content. |
-| `verifyEmailOtp(token_hash, type)` | Confirm email / magic link (e.g. auth confirm route) | Args: `token_hash`, `type` (string or null). Validates type; returns `{ error }` (null on success). Route passes raw query params; no Supabase in route. |
+- Hooks are the only place where client-side data access happens.
+- Hooks prefer calling Edge Functions for:
+  - onboarding
+  - create/update/delete jobs/customers/finance
+  - job photo upload signing + metadata insertion
+  - marketing generation (LangGraph + OpenAI)
+  - billing actions (Stripe)
 
-```ts
-// ❌ BAD – Supabase in route
-const supabase = await createClient();
-await supabase.auth.verifyOtp({ type, token_hash });
+### Example hook categories
 
-// ✅ GOOD – Server function in route
-const { error } = await verifyEmailOtp(token_hash, type);
-```
+- useAuth
+- useLogin / useSignUp / useLogout
+- useJobsList (read-only)
+- useCreateJob (Edge Function)
+- useUploadJobPhoto (Edge Function signing flow)
+- useFinanceSummary
+- useGenerateMarketing
 
-## Where Supabase is allowed
+---
 
-- `hooks/*.ts` – client-side Supabase (browser client).
-- `lib/auth.ts` and other lib modules – server-side Supabase (server client).
+## Server (Next.js route handlers / server components)
+
+### Important
+
+Next.js routes are NOT the backend.
+
+- Do NOT implement business logic in `app/**/route.ts`.
+- Prefer calling Edge Functions directly from the client using `Authorization: Bearer <access_token>`.
+
+### If a Next.js route handler exists
+
+It must be a thin proxy that:
+- receives request
+- forwards request to corresponding Edge Function
+- returns Edge Function response unchanged
+
+It must NOT:
+- perform DB writes directly
+- perform tenant scoping logic
+- call OpenAI directly
+- call Stripe directly
+
+Edge Functions + RLS are the authority.
+
+---
+
+## Where Supabase client usage is allowed
+
+- hooks/*.ts — client-side Supabase (preferably simple reads under RLS)
+- /lib helpers — pure utilities
+- /supabase/functions/** — server-side Supabase usage (preferred for workflows/writes)
+
+---
+
+## Security rules
+
+- Never expose:
+  - SUPABASE_SERVICE_ROLE_KEY
+  - OPENAI_API_KEY
+  - STRIPE_SECRET_KEY
+  - STRIPE_WEBHOOK_SECRET
+
+- All tenant tables must enforce:
+  row.company_id == current_user.company_id
+
+- Edge Functions must:
+  - validate JWT
+  - load company_id
+  - enforce company scoping
+  - validate inputs (Zod recommended)
+  - document request/response JSON schemas

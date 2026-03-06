@@ -2,7 +2,8 @@
 
 import type { InputHTMLAttributes } from "react";
 
-const inputClassName = "border rounded px-3 py-2";
+const inputClassName =
+  "border rounded px-3 py-2 bg-white text-slate-900 placeholder:text-slate-400";
 
 type FormFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;

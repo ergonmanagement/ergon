@@ -21,3 +21,4 @@ Key non-negotiables:
 - Job photos supported via private storage + signed upload URLs (Edge Function controlled)
 - API is client-agnostic (web now, mobile app later)
 - Lots of comments in core logic
+- Lots of tests for every part of the system. Run consistently

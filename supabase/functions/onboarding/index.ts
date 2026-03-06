@@ -43,19 +43,45 @@ type OnboardingRequest = {
   phone: string;
 };
 
+const corsHeaders: HeadersInit = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+function jsonResponse(body: unknown, init?: ResponseInit) {
+  return new Response(JSON.stringify(body), {
+    status: init?.status ?? 200,
+    headers: {
+      "Content-Type": "application/json",
+      ...corsHeaders,
+      ...init?.headers,
+    },
+  });
+}
+
 serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+      },
+    });
+  }
+
   if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Method not allowed", code: "METHOD_NOT_ALLOWED" }),
-      { status: 405, headers: { "Content-Type": "application/json" } },
+    return jsonResponse(
+      { error: "Method not allowed", code: "METHOD_NOT_ALLOWED" },
+      { status: 405 },
     );
   }
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    return new Response(
-      JSON.stringify({ error: "Missing or invalid Authorization header", code: "AUTH_MISSING" }),
-      { status: 401, headers: { "Content-Type": "application/json" } },
+    return jsonResponse(
+      { error: "Missing or invalid Authorization header", code: "AUTH_MISSING" },
+      { status: 401 },
     );
   }
 
@@ -71,17 +97,17 @@ serve(async (req: Request) => {
   try {
     body = (await req.json()) as OnboardingRequest;
   } catch {
-    return new Response(
-      JSON.stringify({ error: "Invalid JSON body", code: "VALIDATION_INVALID_JSON" }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
+    return jsonResponse(
+      { error: "Invalid JSON body", code: "VALIDATION_INVALID_JSON" },
+      { status: 400 },
     );
   }
 
   const { company_name, service_type, phone } = body;
   if (!company_name || !service_type || !phone) {
-    return new Response(
-      JSON.stringify({ error: "Missing required fields", code: "VALIDATION_MISSING_FIELDS" }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
+    return jsonResponse(
+      { error: "Missing required fields", code: "VALIDATION_MISSING_FIELDS" },
+      { status: 400 },
     );
   }
 
@@ -91,9 +117,9 @@ serve(async (req: Request) => {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized", code: "AUTH_UNAUTHORIZED" }),
-      { status: 401, headers: { "Content-Type": "application/json" } },
+    return jsonResponse(
+      { error: "Unauthorized", code: "AUTH_UNAUTHORIZED" },
+      { status: 401 },
     );
   }
 
@@ -106,15 +132,12 @@ serve(async (req: Request) => {
   });
 
   if (error) {
-    return new Response(
-      JSON.stringify({ error: error.message, code: "ONBOARDING_FAILED" }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
+    return jsonResponse(
+      { error: error.message, code: "ONBOARDING_FAILED" },
+      { status: 400 },
     );
   }
 
-  return new Response(JSON.stringify(data), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return jsonResponse(data);
 });
 
