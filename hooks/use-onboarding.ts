@@ -23,6 +23,22 @@ export function useOnboarding() {
 
     try {
       const supabase = createClient();
+
+      // Get the current session to ensure we're authenticated
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        setError("Authentication required. Please sign in again.");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Calling onboarding Edge Function with:', {
+        company_name: companyName,
+        service_type: serviceType,
+        phone,
+      });
+
       const { data, error } = await supabase.functions.invoke("onboarding", {
         body: {
           company_name: companyName,
@@ -31,20 +47,33 @@ export function useOnboarding() {
         },
       });
 
-      if (error || (data && (data as any).error)) {
-        const message =
-          (data as any)?.error ??
-          error?.message ??
-          "Unable to complete onboarding.";
-        setError(message);
+      console.log('Edge Function response:', { data, error });
+
+      if (error) {
+        console.error('Edge Function error:', error);
+        let errorMessage = "Unable to complete onboarding.";
+
+        if (error.message) {
+          errorMessage = `Error: ${error.message}`;
+        }
+
+        setError(errorMessage);
         setIsLoading(false);
         return;
       }
 
+      if (data && (data as any).error) {
+        console.error('Edge Function returned error:', (data as any));
+        setError(`Error: ${(data as any).error}`);
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Onboarding successful, redirecting to dashboard');
       router.push("/dashboard");
     } catch (err) {
-      console.error(err);
-      setError("Unexpected error during onboarding.");
+      console.error('Unexpected error:', err);
+      setError("Unexpected error during onboarding. Please try again.");
       setIsLoading(false);
     }
   }

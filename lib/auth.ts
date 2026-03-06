@@ -35,6 +35,7 @@ export async function verifyEmailOtp(
 /**
  * Server-side function to get the currently authenticated user.
  * Redirects to login page if no user is authenticated.
+ * Redirects to onboarding if user hasn't completed onboarding (no company).
  * Use this in Server Components, Server Actions, or Route Handlers.
  */
 export async function requireAuth() {
@@ -44,6 +45,17 @@ export async function requireAuth() {
 
   if (!user) {
     redirect("/auth/login");
+  }
+
+  // Check if user has completed onboarding (has a company)
+  const { data: userData, error } = await supabase
+    .from("users")
+    .select("company_id")
+    .eq("id", user.sub)
+    .single();
+
+  if (error || !userData?.company_id) {
+    redirect("/auth/onboarding");
   }
 
   return user;
