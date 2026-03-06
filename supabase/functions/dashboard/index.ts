@@ -43,17 +43,34 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.0";
 
 type SupabaseClient = ReturnType<typeof createClient>;
 
+const corsHeaders: HeadersInit = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
 function jsonResponse(body: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(body), {
     status: init?.status ?? 200,
     headers: {
       "Content-Type": "application/json",
+      ...corsHeaders,
       ...init?.headers,
     },
   });
 }
 
 serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    // CORS preflight support
+    return new Response("ok", {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+      },
+    });
+  }
+
   if (req.method !== "GET") {
     return jsonResponse(
       { error: "Method not allowed", code: "METHOD_NOT_ALLOWED" },

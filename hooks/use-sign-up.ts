@@ -44,7 +44,9 @@ export function useSignUp() {
         },
       });
       if (signUpError) throw signUpError;
-      router.push("/dashboard");
+      // After successful signup, always send the user through onboarding
+      // so that companies + users rows are created correctly.
+      router.push("/auth/onboarding");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
