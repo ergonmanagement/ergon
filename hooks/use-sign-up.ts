@@ -19,6 +19,7 @@ export function useSignUp() {
 
   async function signUp(params: SignUpParams) {
     const { email, password, repeatPassword, firstName, lastName } = params;
+    const normalizedEmail = email.trim().toLowerCase();
 
     setIsLoading(true);
     setError(null);
@@ -32,7 +33,7 @@ export function useSignUp() {
     try {
       const supabase = createClient();
       const { error: signUpError } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/update-password`,
