@@ -10,7 +10,7 @@ type AppShellProps = {
 export function AppShell({ user, children }: AppShellProps) {
   return (
     <>
-      <div className="hidden md:flex min-h-svh bg-[#131B41] text-[#FFFFF6]">
+      <div className="hidden md:flex min-h-svh bg-[#131B41] text-[#FFFFF6] overflow-x-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col">
           <header className="h-14 px-4 flex items-center justify-end border-b border-white/10">

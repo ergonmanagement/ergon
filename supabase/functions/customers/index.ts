@@ -50,19 +50,8 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.0";
-
-type CustomerType = "customer" | "prospect";
-
-type UpsertCustomerRequest = {
-  id?: string;
-  type: CustomerType;
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-  source?: string;
-};
+import { CustomerUpsertBody } from "../_shared/schemas.ts";
+import { enforceActiveSubscription } from "../_shared/subscription.ts";
 
 function jsonResponse(body: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(body), {
@@ -111,7 +100,7 @@ serve(async (req: Request) => {
       ? new URLSearchParams(headerQuery)
       : new URL(req.url).searchParams;
 
-    const type = searchParams.get("type") as CustomerType | null;
+    const type = searchParams.get("type") as "customer" | "prospect" | null;
     const search = searchParams.get("search");
     const page = Number(searchParams.get("page") ?? "1");
     const pageSize = Number(searchParams.get("pageSize") ?? "20");
@@ -148,9 +137,12 @@ serve(async (req: Request) => {
   }
 
   if (method === "POST") {
-    let body: UpsertCustomerRequest;
+    const subCheck = await enforceActiveSubscription(supabase, user.id);
+    if (subCheck) return subCheck;
+
+    let json: unknown;
     try {
-      body = (await req.json()) as UpsertCustomerRequest;
+      json = await req.json();
     } catch {
       return jsonResponse(
         { error: "Invalid JSON body", code: "VALIDATION_INVALID_JSON" },
@@ -158,12 +150,15 @@ serve(async (req: Request) => {
       );
     }
 
-    if (!body.type || !body.name) {
+    const parsed = CustomerUpsertBody.safeParse(json);
+    if (!parsed.success) {
       return jsonResponse(
-        { error: "Missing required fields", code: "VALIDATION_MISSING_FIELDS" },
+        { error: "Invalid request body", code: "VALIDATION_INVALID_BODY" },
         { status: 400 },
       );
     }
+
+    const body = parsed.data;
 
     const payload: Record<string, unknown> = {
       type: body.type,

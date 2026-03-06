@@ -1,5 +1,6 @@
 import { requireAuth } from "@/lib/auth";
 import { DashboardMenu } from "./_components/dashboard-menu";
+import { DashboardClient } from "./_components/dashboard-client";
 
 export default async function DashboardPage() {
   const user = await requireAuth();
@@ -8,10 +9,14 @@ export default async function DashboardPage() {
       <div className="flex justify-end p-4">
         <DashboardMenu />
       </div>
-      <main className="min-h-screen flex flex-col items-center">
-        
-        <h1 className="text-4xl font-bold mb-4">Dashboard</h1>
-        <p>Welcome, {user.email}</p>
+      <main className="min-h-screen flex flex-col items-center px-4 py-6">
+        <div className="w-full max-w-6xl space-y-6">
+          <header className="space-y-1">
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-sm text-white/70">Welcome, {user.email}</p>
+          </header>
+          <DashboardClient />
+        </div>
       </main>
     </>
   );

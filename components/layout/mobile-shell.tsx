@@ -22,7 +22,7 @@ export function MobileShell({ children }: MobileShellProps) {
   const pathname = usePathname();
 
   return (
-    <div className="md:hidden min-h-svh flex flex-col bg-[#131B41] text-[#FFFFF6]">
+    <div className="md:hidden min-h-svh flex flex-col bg-[#131B41] text-[#FFFFF6] overflow-x-hidden">
       <header className="h-14 px-4 flex items-center justify-between border-b border-white/10">
         <span className="font-semibold text-sm">Ergon</span>
         <button

@@ -80,3 +80,53 @@ npm run db:reset
 - For protected pages/components, see patterns in `lib/auth.ts` and `lib/supabase/*`.
 - If you use local containers, make sure Docker is running.
 
+## Testing
+
+- Frontend/unit tests live alongside features (e.g. `app/.../*.test.tsx`, `hooks/...*.test.ts`).
+- Run all tests with:
+
+```bash
+npm test
+```
+
+The current suite covers:
+
+- Auth flows and hooks.
+- Jobs/Customers/Schedule/Finance/Marketing hooks and pages.
+- Billing and Dashboard hooks and pages.
+
+## Environments & deployment
+
+- **Local dev**
+  - Next.js dev server: `npm run dev`.
+  - Supabase local stack (optional): `npm run supabase:start` / `npm run supabase:stop`.
+  - Migrations: `npm run db:migrate:generate` / `npm run db:migrate:run` / `npm run db:reset`.
+
+- **Staging / Production (recommended mapping)**
+  - One Supabase project per environment (staging, production).
+  - One Vercel project per environment, each wired to the appropriate Supabase project via env vars.
+
+Deployment flow:
+
+1. Commit code and push to the appropriate branch.
+2. Run Supabase migrations against the target project.
+3. Vercel picks up the push and deploys the Next.js app.
+
+## Logging & errors
+
+- Edge Functions return errors in a consistent shape:
+
+```json
+{ "error": "message", "code": "ERROR_CODE" }
+```
+
+- Error codes follow a module prefix (e.g. `AUTH_*`, `FINANCE_*`, `MARKETING_*`, `BILLING_*`, `DASHBOARD_*`).
+- When logging server-side, include at minimum:
+  - `user_id` (if available)
+  - `company_id` (if available)
+  - `function_name`
+  - `error_code` (when applicable)
+- Frontend surfaces errors by:
+  - Showing short, user-friendly messages.
+  - Optionally inspecting `code` to branch on specific cases (e.g. auth vs validation vs billing).
+
