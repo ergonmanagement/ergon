@@ -87,8 +87,8 @@ serve(async (req: Request) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const supabase: SupabaseClient = createClient(supabaseUrl, serviceRoleKey, {
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  const supabase: SupabaseClient = createClient(supabaseUrl, anonKey, {
     global: {
       headers: { Authorization: authHeader },
     },
