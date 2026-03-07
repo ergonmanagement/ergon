@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useDashboard } from "@/hooks/use-dashboard";
 
-// Utility function to format currency
+/**
+ * Utility function to format currency values consistently across the dashboard
+ * 
+ * @param amount - The numeric amount to format
+ * @returns Formatted currency string (e.g., "$1,234")
+ */
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -13,11 +18,14 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
-// Loading skeleton component
+/**
+ * Loading skeleton component to show while dashboard data is fetching
+ * Provides visual feedback with animated placeholders that match the final layout
+ */
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Stats cards skeleton */}
+      {/* Stats cards skeleton - mirrors the 3-column layout */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[...Array(3)].map((_, i) => (
           <div key={i} className="bg-white rounded-lg border border-gray-200 p-6">
@@ -28,8 +36,8 @@ function DashboardSkeleton() {
           </div>
         ))}
       </div>
-      
-      {/* Content cards skeleton */}
+
+      {/* Content cards skeleton - mirrors the 2-column layout on large screens */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="bg-white rounded-lg border border-gray-200 p-6">
@@ -48,13 +56,28 @@ function DashboardSkeleton() {
   );
 }
 
+/**
+ * Main Dashboard Client Component
+ * 
+ * This client component handles the interactive dashboard interface including:
+ * - Real-time data fetching and display
+ * - Loading states with skeleton UI
+ * - Error handling and user feedback
+ * - Navigation links to detailed views
+ * 
+ * The component integrates with the useDashboard hook to fetch aggregated
+ * business data including schedules, prospects, financial summaries, and more.
+ */
 export function DashboardClient() {
+  // Fetch dashboard data using custom hook
   const { data, loading, error } = useDashboard();
 
+  // Show loading skeleton while data is being fetched
   if (loading) {
     return <DashboardSkeleton />;
   }
 
+  // Handle error states with user-friendly messaging
   if (error || !data) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
@@ -75,14 +98,17 @@ export function DashboardClient() {
     );
   }
 
+  // Destructure dashboard data for easier access
   const { today_schedule, upcoming_jobs, new_prospects, finance_summary, marketing_reminders } = data;
 
   return (
     <div className="space-y-8">
-      {/* Financial Overview Cards */}
+      {/* Financial Overview Cards - Key Performance Indicators */}
       <section>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Financial Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          {/* Revenue Card - Shows total income */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -98,7 +124,8 @@ export function DashboardClient() {
               </div>
             </div>
           </div>
-          
+
+          {/* Expenses Card - Shows total expenses */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -114,25 +141,22 @@ export function DashboardClient() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  finance_summary.net >= 0 ? 'bg-blue-100' : 'bg-red-100'
-                }`}>
-                  <span className={`text-xl ${
-                    finance_summary.net >= 0 ? 'text-blue-600' : 'text-red-600'
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${finance_summary.net >= 0 ? 'bg-blue-100' : 'bg-red-100'
                   }`}>
+                  <span className={`text-xl ${finance_summary.net >= 0 ? 'text-blue-600' : 'text-red-600'
+                    }`}>
                     {finance_summary.net >= 0 ? '📈' : '📉'}
                   </span>
                 </div>
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Net Income</p>
-                <p className={`text-2xl font-bold ${
-                  finance_summary.net >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <p className={`text-2xl font-bold ${finance_summary.net >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
                   {formatCurrency(finance_summary.net)}
                 </p>
               </div>
@@ -177,7 +201,7 @@ export function DashboardClient() {
                   <div key={job.id} className="flex items-start space-x-3">
                     <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
                     <div>
-                      <Link 
+                      <Link
                         href={`/jobs/${job.id}`}
                         className="text-sm font-medium text-blue-600 hover:text-blue-500"
                       >
@@ -216,7 +240,7 @@ export function DashboardClient() {
                 {upcoming_jobs.map((job: any) => (
                   <div key={job.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
-                      <Link 
+                      <Link
                         href={`/jobs/${job.id}`}
                         className="text-sm font-medium text-blue-600 hover:text-blue-500"
                       >

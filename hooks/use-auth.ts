@@ -5,8 +5,14 @@ import { User } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 
 /**
- * React hook to get the currently authenticated user in Client Components.
- * Returns the user object and a loading state.
+ * React hook to manage authentication state in Client Components
+ * 
+ * Provides:
+ * - Current authenticated user data
+ * - Loading state during auth checks
+ * - Automatic state updates when auth changes
+ * 
+ * This hook is for client-side components. For server-side auth, use requireAuth() instead.
  * 
  * @example
  * ```tsx
@@ -21,19 +27,23 @@ import { useEffect, useState } from "react";
  * ```
  */
 export function useAuth() {
+  // State to track current authenticated user
   const [user, setUser] = useState<User | null>(null);
+  // Loading state to handle initial auth check and transitions
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const supabase = createClient();
 
-    // Get initial session
+    // Get initial session on mount
+    // This handles page refreshes and initial loads
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
       setLoading(false);
     });
 
-    // Listen for auth changes
+    // Set up real-time listener for authentication state changes
+    // This handles login, logout, token refresh, etc.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -41,8 +51,9 @@ export function useAuth() {
       setLoading(false);
     });
 
+    // Cleanup subscription on unmount to prevent memory leaks
     return () => subscription.unsubscribe();
-  }, []);
+  }, []); // Empty dependency array - only run once on mount
 
   return { user, loading };
 }
