@@ -3,14 +3,19 @@
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 
+type TestResult = {
+    test: string;
+    result: string;
+};
+
 export function DirectFunctionTest() {
-    const [results, setResults] = useState<any[]>([]);
+    const [results, setResults] = useState<TestResult[]>([]);
     const [testing, setTesting] = useState(false);
 
     const runTests = async () => {
         setTesting(true);
         setResults([]);
-        const testResults: any[] = [];
+        const testResults: TestResult[] = [];
 
         try {
             const supabase = createClient();
@@ -32,20 +37,64 @@ export function DirectFunctionTest() {
             const token = session.access_token;
             testResults.push({ test: "Token check", result: `✅ Token length: ${token.length}` });
 
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+            const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+            const apiKey = publishableKey ?? anonKey;
+
+            if (!supabaseUrl || !apiKey) {
+                testResults.push({
+                    test: "Config check",
+                    result: "❌ Missing NEXT_PUBLIC_SUPABASE_URL or API key env",
+                });
+                setResults(testResults);
+                setTesting(false);
+                return;
+            }
+
+            const tokenParts = token.split(".");
+            const payloadPart = tokenParts.length > 1 ? tokenParts[1] : "";
+            const decodedPayload = payloadPart
+                ? JSON.parse(atob(payloadPart.replace(/-/g, "+").replace(/_/g, "/")))
+                : null;
+            const tokenIssuer = decodedPayload?.iss as string | undefined;
+            const issuerRef = tokenIssuer?.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
+            const urlRef = new URL(supabaseUrl).hostname.split(".")[0];
+            if (issuerRef && issuerRef !== urlRef) {
+                testResults.push({
+                    test: "Issuer check",
+                    result: `❌ Token issuer ref (${issuerRef}) does not match URL ref (${urlRef})`,
+                });
+            } else if (issuerRef) {
+                testResults.push({
+                    test: "Issuer check",
+                    result: `✅ Token issuer ref matches URL ref (${urlRef})`,
+                });
+            }
+
             // Test each function with direct fetch
             const functions = ["dashboard", "schedule", "customers", "jobs", "finance", "marketing"];
+
+            const now = new Date();
+            const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+            const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+            const financeQuery = new URLSearchParams({
+                from: monthStart.toISOString().slice(0, 10),
+                to: monthEnd.toISOString().slice(0, 10),
+            }).toString();
 
             for (const funcName of functions) {
                 try {
                     const response = await fetch(
-                        `https://loyxmnbczhbovqllvwus.supabase.co/functions/v1/${funcName}`,
+                        `${supabaseUrl}/functions/v1/${funcName}`,
                         {
                             method: "GET",
                             headers: {
                                 "Authorization": `Bearer ${token}`,
-                                "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxveXhtbmJjemhib3ZxbGx2d3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM3NTIyMTcsImV4cCI6MjA0OTMyODIxN30.BSvO_LJOsw7T1lL_Hv3DqCxEBXRRf3d3JG5hCgEGwvs",
+                                "apikey": apiKey,
                                 "Content-Type": "application/json",
-                                ...(funcName === "schedule" ? { "X-Ergon-Query": "from=2026-03-01&to=2026-03-07" } : {})
+                                ...(funcName === "schedule" ? { "X-Ergon-Query": "from=2026-03-01&to=2026-03-07" } : {}),
+                                ...(funcName === "finance" ? { "X-Ergon-Query": financeQuery } : {})
                             }
                         }
                     );

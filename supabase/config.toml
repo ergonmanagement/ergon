@@ -257,6 +257,39 @@ max_frequency = "5s"
 # enabled = true
 # uri = "pg-functions://postgres/auth/before-user-created-hook"
 
+[functions.dashboard]
+verify_jwt = false
+
+[functions.schedule]
+verify_jwt = false
+
+[functions.customers]
+verify_jwt = false
+
+[functions.jobs]
+verify_jwt = false
+
+[functions.finance]
+verify_jwt = false
+
+[functions.marketing]
+verify_jwt = false
+
+[functions.customer-profile]
+verify_jwt = false
+
+[functions.jobs-photos]
+verify_jwt = false
+
+[functions.billing-create-checkout-session]
+verify_jwt = false
+
+[functions.onboarding]
+verify_jwt = false
+
+[functions.billing-webhook]
+verify_jwt = false
+
 # This hook runs before a token is issued and allows you to add additional claims based on the authentication method used.
 # [auth.hook.custom_access_token]
 # enabled = true
