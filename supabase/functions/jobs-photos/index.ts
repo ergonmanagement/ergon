@@ -34,15 +34,16 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.0";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-ergon-query",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE"
-};
-
 type JobPhotoRequest = {
   job_id: string;
   content_type: string;
+};
+
+const corsHeaders: HeadersInit = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-ergon-query",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 };
 
 function jsonResponse(body: unknown, init?: ResponseInit) {
@@ -57,9 +58,13 @@ function jsonResponse(body: unknown, init?: ResponseInit) {
 }
 
 serve(async (req: Request) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+      },
+    });
   }
 
   if (req.method !== "POST") {
@@ -117,7 +122,7 @@ serve(async (req: Request) => {
   // Validate that the job exists and belongs to the current company via RLS.
   const { data: job, error: jobError } = await supabase
     .from("jobs")
-    .select("id")
+    .select("id, company_id")
     .eq("id", body.job_id)
     .single();
 
@@ -144,6 +149,7 @@ serve(async (req: Request) => {
   const { data: photo, error: photoError } = await supabase
     .from("job_photos")
     .insert({
+      company_id: job.company_id,
       job_id: body.job_id,
       storage_path: objectPath,
     })
@@ -165,4 +171,3 @@ serve(async (req: Request) => {
     },
   });
 });
-

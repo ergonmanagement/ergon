@@ -1,17 +1,80 @@
 /**
  * Supabase Edge Function: marketing
- * Handles marketing data queries with proper authentication
+ *
+ * Purpose:
+ * - Generate marketing copy using OpenAI via a LangGraph-style pipeline.
+ * - Persist generated content into marketing_assets.
+ * - List existing marketing_assets for the current company.
+ *
+ * HTTP interface:
+ *
+ * - POST /functions/v1/marketing
+ *   Request JSON body:
+ *   {
+ *     "channel": "social_post" | "email" | "sms" | "flyer",
+ *     "context"?: string
+ *   }
+ *
+ *   Response JSON (success):
+ *   {
+ *     "asset": {
+ *       "id": string,
+ *       "company_id": string,
+ *       "channel": string,
+ *       "content": string,
+ *       "context": string | null,
+ *       "status": string,
+ *       "created_at": string
+ *     }
+ *   }
+ *
+ * - GET /functions/v1/marketing
+ *   Query (via URL or X-Ergon-Query header):
+ *   - channel?: "social_post" | "email" | "sms" | "flyer"
+ *   - page?: number
+ *   - pageSize?: number
+ *
+ *   Response JSON (success):
+ *   {
+ *     "items": MarketingAsset[],
+ *     "total": number
+ *   }
+ *
+ * Error JSON schema (for both verbs):
+ * {
+ *   "error": string,
+ *   "code": string
+ * }
+ *
+ * Security and architecture notes:
+ * - Auth:
+ *   - Supabase JWT is required for all operations.
+ *   - auth.getUser() is used to resolve the current user id.
+ * - Company scoping:
+ *   - The Edge Function looks up the user's company_id from public.users.
+ *   - All reads/writes rely on RLS (company_id policies) and never accept
+ *     company_id from the client.
+ * - AI:
+ *   - AI is ONLY used here (Marketing module).
+ *   - OpenAI is called exclusively from GenerateCopyNode in
+ *     lib/marketing/langgraph/graph.ts.
+ *   - AI never touches the database directly.
  */
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.0";
+import {
+  runMarketingGraph,
+  type MarketingChannel,
+} from "../../../lib/marketing/langgraph/graph.ts";
 
 type SupabaseClient = ReturnType<typeof createClient>;
 
 const corsHeaders: HeadersInit = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-ergon-query",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-ergon-query",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 };
 
 function jsonResponse(body: unknown, init?: ResponseInit) {
@@ -25,21 +88,33 @@ function jsonResponse(body: unknown, init?: ResponseInit) {
   });
 }
 
+async function resolveCompanyId(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("company_id")
+    .eq("id", userId)
+    .single();
+
+  if (error || !data?.company_id) {
+    throw new Error("USER_COMPANY_NOT_FOUND");
+  }
+
+  return data.company_id as string;
+}
+
 serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
+  const method = req.method.toUpperCase();
+
+  if (method === "OPTIONS") {
     return new Response("ok", {
       status: 200,
       headers: {
         ...corsHeaders,
       },
     });
-  }
-
-  if (req.method !== "GET") {
-    return jsonResponse(
-      { error: "Method not allowed", code: "METHOD_NOT_ALLOWED" },
-      { status: 405 },
-    );
   }
 
   const authHeader = req.headers.get("Authorization");
@@ -52,7 +127,7 @@ serve(async (req: Request) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-  const supabase: SupabaseClient = createClient(supabaseUrl, anonKey, {
+  const supabase = createClient(supabaseUrl, anonKey, {
     global: {
       headers: { Authorization: authHeader },
     },
@@ -70,57 +145,100 @@ serve(async (req: Request) => {
     );
   }
 
+  let companyId: string;
   try {
-    // Basic marketing stats - simplified for now
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    // Query recent customers for marketing metrics
-    const { data: customers, error: customersError } = await supabase
-      .from("customers")
-      .select("id, created_at")
-      .gte("created_at", thirtyDaysAgo.toISOString())
-      .order("created_at", { ascending: false });
-
-    if (customersError) {
-      return jsonResponse(
-        { error: customersError.message, code: "MARKETING_QUERY_FAILED" },
-        { status: 400 },
-      );
-    }
-
-    // Query recent jobs for conversion metrics
-    const { data: jobs, error: jobsError } = await supabase
-      .from("jobs")
-      .select("id, created_at, status")
-      .gte("created_at", thirtyDaysAgo.toISOString())
-      .order("created_at", { ascending: false });
-
-    if (jobsError) {
-      return jsonResponse(
-        { error: jobsError.message, code: "MARKETING_QUERY_FAILED" },
-        { status: 400 },
-      );
-    }
-
-    const newCustomers = customers?.length || 0;
-    const newJobs = jobs?.length || 0;
-    const completedJobs = jobs?.filter(j => j.status === 'completed').length || 0;
-
-    return jsonResponse({
-      metrics: {
-        newCustomers,
-        newJobs,
-        completedJobs,
-        conversionRate: newCustomers > 0 ? (completedJobs / newCustomers) * 100 : 0
-      },
-      customers: customers ?? [],
-      jobs: jobs ?? []
-    });
-  } catch (err) {
+    companyId = await resolveCompanyId(supabase, user.id);
+  } catch {
     return jsonResponse(
-      { error: "Internal server error", code: "INTERNAL_ERROR" },
-      { status: 500 },
+      { error: "User company not found", code: "USER_COMPANY_NOT_FOUND" },
+      { status: 400 },
     );
   }
+
+  // List marketing assets
+  if (method === "GET") {
+    const headerQuery = req.headers.get("X-Ergon-Query");
+    const searchParams = headerQuery
+      ? new URLSearchParams(headerQuery)
+      : new URL(req.url).searchParams;
+
+    const channel = searchParams.get("channel") as MarketingChannel | null;
+    const page = Number(searchParams.get("page") ?? "1");
+    const pageSize = Number(searchParams.get("pageSize") ?? "20");
+    const limit = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 20;
+    const offset = (Number.isFinite(page) && page > 0 ? page - 1 : 0) * limit;
+
+    let query = supabase
+      .from("marketing_assets")
+      .select("*", { count: "exact" })
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (channel) {
+      query = query.eq("channel", channel);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      return jsonResponse(
+        { error: error.message, code: "MARKETING_LIST_FAILED" },
+        { status: 400 },
+      );
+    }
+
+    return jsonResponse({
+      items: data ?? [],
+      total: count ?? 0,
+    });
+  }
+
+  // Generate new marketing content
+  if (method === "POST") {
+    let body: { channel?: string; context?: string | null };
+    try {
+      body = (await req.json()) as { channel?: string; context?: string | null };
+    } catch {
+      return jsonResponse(
+        { error: "Invalid JSON body", code: "VALIDATION_INVALID_JSON" },
+        { status: 400 },
+      );
+    }
+
+    const channel = body.channel as MarketingChannel | undefined;
+    const context =
+      typeof body.context === "string" ? body.context : body.context ?? null;
+
+    if (!channel) {
+      return jsonResponse(
+        { error: "Missing channel", code: "VALIDATION_MISSING_CHANNEL" },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const asset = await runMarketingGraph({
+        supabase,
+        userId: user.id,
+        companyId,
+        channel,
+        context,
+      });
+
+      return jsonResponse({ asset });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to generate marketing copy.";
+      return jsonResponse(
+        { error: message, code: "MARKETING_GENERATE_FAILED" },
+        { status: 400 },
+      );
+    }
+  }
+
+  return jsonResponse(
+    { error: "Method not allowed", code: "METHOD_NOT_ALLOWED" },
+    { status: 405 },
+  );
 });

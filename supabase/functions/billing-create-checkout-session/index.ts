@@ -34,17 +34,18 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-ergon-query",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE"
-};
 import Stripe from "https://esm.sh/stripe@14.0.0?target=deno";
 
 type CheckoutRequest = {
   success_url: string;
   cancel_url: string;
+};
+
+const corsHeaders: HeadersInit = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-ergon-query",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 };
 
 function jsonResponse(body: unknown, init?: ResponseInit) {
@@ -76,9 +77,13 @@ async function resolveCompanyId(
 }
 
 serve(async (req: Request) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+      },
+    });
   }
 
   if (req.method !== "POST") {
@@ -190,4 +195,3 @@ serve(async (req: Request) => {
     );
   }
 });
-

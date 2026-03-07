@@ -46,7 +46,8 @@ type OnboardingRequest = {
 const corsHeaders: HeadersInit = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-ergon-query",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 };
 
 function jsonResponse(body: unknown, init?: ResponseInit) {
@@ -146,4 +147,3 @@ serve(async (req: Request) => {
 
   return jsonResponse(data);
 });
-
