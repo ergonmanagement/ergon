@@ -21,6 +21,7 @@ export type Job = {
   price: number | null;              // Job price (null for leads/quotes)
   notes: string | null;              // Optional job notes
   source: string | null;             // Optional source of lead
+  company_name: string | null;       // Company name for easy querying
 };
 
 /** Filter parameters for job queries */

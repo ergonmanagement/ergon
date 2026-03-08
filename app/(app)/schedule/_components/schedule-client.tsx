@@ -2,6 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useSchedule } from "@/hooks/use-schedule";
+import { useJobs } from "@/hooks/use-jobs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, ChevronDown } from "lucide-react";
 
 type ViewMode = "week" | "month";
 
@@ -66,6 +74,36 @@ function getEventsForDate(events: any[], targetDate: Date) {
 export function ScheduleClient() {
   const [view, setView] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [showCreateDropdown, setShowCreateDropdown] = useState(false);
+  const [showEventDialog, setShowEventDialog] = useState(false);
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [showJobDialog, setShowJobDialog] = useState(false);
+
+  // Form state for different types
+  const [eventFormData, setEventFormData] = useState({
+    title: "",
+    start_at: "",
+    end_at: "",
+    location: "",
+    notes: ""
+  });
+
+  const [taskFormData, setTaskFormData] = useState({
+    title: "",
+    start_at: "",
+    end_at: "",
+    notes: ""
+  });
+
+  const [jobFormData, setJobFormData] = useState({
+    customer_name: "",
+    service_type: "",
+    scheduled_start: "",
+    scheduled_end: "",
+    address: "",
+    price: "",
+    notes: ""
+  });
 
   // Calculate date range based on current view and date
   const dateRange = useMemo(() => {
@@ -91,10 +129,103 @@ export function ScheduleClient() {
     }
   }, [view, currentDate]);
 
-  const { events, loading, error } = useSchedule({
+  const { events, loading, error, upsertEvent } = useSchedule({
     from: dateRange.from,
     to: dateRange.to,
   });
+
+  const { upsertJob } = useJobs({});
+
+  // Form handlers
+  const resetEventForm = () => {
+    setEventFormData({
+      title: "",
+      start_at: "",
+      end_at: "",
+      location: "",
+      notes: ""
+    });
+  };
+
+  const resetTaskForm = () => {
+    setTaskFormData({
+      title: "",
+      start_at: "",
+      end_at: "",
+      notes: ""
+    });
+  };
+
+  const resetJobForm = () => {
+    setJobFormData({
+      customer_name: "",
+      service_type: "",
+      scheduled_start: "",
+      scheduled_end: "",
+      address: "",
+      price: "",
+      notes: ""
+    });
+  };
+
+  const handleEventSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await upsertEvent({
+        type: "event",
+        title: eventFormData.title,
+        start_at: eventFormData.start_at,
+        end_at: eventFormData.end_at,
+        location: eventFormData.location,
+        notes: eventFormData.notes,
+      });
+      setShowEventDialog(false);
+      resetEventForm();
+    } catch (err) {
+      console.error("Error creating event:", err);
+    }
+  };
+
+  const handleTaskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await upsertEvent({
+        type: "task",
+        title: taskFormData.title,
+        start_at: taskFormData.start_at,
+        end_at: taskFormData.end_at,
+        location: null,
+        notes: taskFormData.notes,
+      });
+      setShowTaskDialog(false);
+      resetTaskForm();
+    } catch (err) {
+      console.error("Error creating task:", err);
+    }
+  };
+
+  const handleJobSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await upsertJob({
+        customer_name: jobFormData.customer_name,
+        service_type: jobFormData.service_type,
+        status: "scheduled",
+        scheduled_start: jobFormData.scheduled_start,
+        scheduled_end: jobFormData.scheduled_end,
+        address: jobFormData.address,
+        price: jobFormData.price ? parseFloat(jobFormData.price) : null,
+        notes: jobFormData.notes,
+        customer_id: null,
+        source: "schedule",
+        company_name: null // Will be auto-populated by trigger
+      });
+      setShowJobDialog(false);
+      resetJobForm();
+    } catch (err) {
+      console.error("Error creating job:", err);
+    }
+  };
 
   const calendarDays = useMemo(() => {
     if (view === "month") {
@@ -154,23 +285,73 @@ export function ScheduleClient() {
           </div>
         </div>
 
-        <div className="inline-flex rounded-md border border-gray-300 text-xs overflow-hidden bg-white">
-          <button
-            type="button"
-            onClick={() => setView("week")}
-            className={`px-3 py-1 ${view === "week" ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-50"
-              }`}
-          >
-            Week
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("month")}
-            className={`px-3 py-1 ${view === "month" ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-50"
-              }`}
-          >
-            Month
-          </button>
+        <div className="flex items-center space-x-3">
+          {/* Create dropdown */}
+          <div className="relative">
+            <Button
+              onClick={() => setShowCreateDropdown(!showCreateDropdown)}
+              className="flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Add New
+              <ChevronDown size={14} />
+            </Button>
+
+            {showCreateDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      setShowEventDialog(true);
+                      setShowCreateDropdown(false);
+                      resetEventForm();
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    📅 Event
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowTaskDialog(true);
+                      setShowCreateDropdown(false);
+                      resetTaskForm();
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    ✓ Task
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowJobDialog(true);
+                      setShowCreateDropdown(false);
+                      resetJobForm();
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    🔧 Job
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* View toggle */}
+          <div className="inline-flex rounded-md border border-gray-300 text-xs overflow-hidden bg-white">
+            <button
+              type="button"
+              onClick={() => setView("week")}
+              className={`px-3 py-1 ${view === "week" ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-50"}`}
+            >
+              Week
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("month")}
+              className={`px-3 py-1 ${view === "month" ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-50"}`}
+            >
+              Month
+            </button>
+          </div>
         </div>
       </div>
 
@@ -218,8 +399,8 @@ export function ScheduleClient() {
                       {day.date && (
                         <>
                           <div className={`text-sm mb-1 ${isToday
-                              ? "bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold"
-                              : "text-gray-900"
+                            ? "bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold"
+                            : "text-gray-900"
                             }`}>
                             {day.date.getDate()}
                           </div>
@@ -283,8 +464,8 @@ export function ScheduleClient() {
                           }`}
                       >
                         <div className={`text-lg mb-3 font-medium ${isToday
-                            ? "bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center"
-                            : "text-gray-900"
+                          ? "bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center"
+                          : "text-gray-900"
                           }`}>
                           {date.getDate()}
                         </div>
@@ -317,7 +498,227 @@ export function ScheduleClient() {
           )}
         </>
       )}
+
+      {/* Create Event Dialog */}
+      <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Event</DialogTitle>
+            <DialogDescription>
+              Add a new event to your schedule.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEventSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="event-title">Title *</Label>
+              <Input
+                id="event-title"
+                value={eventFormData.title}
+                onChange={(e) => setEventFormData({ ...eventFormData, title: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="event-start">Start Date & Time *</Label>
+              <Input
+                id="event-start"
+                type="datetime-local"
+                value={eventFormData.start_at}
+                onChange={(e) => setEventFormData({ ...eventFormData, start_at: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="event-end">End Date & Time *</Label>
+              <Input
+                id="event-end"
+                type="datetime-local"
+                value={eventFormData.end_at}
+                onChange={(e) => setEventFormData({ ...eventFormData, end_at: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="event-location">Location</Label>
+              <Input
+                id="event-location"
+                value={eventFormData.location}
+                onChange={(e) => setEventFormData({ ...eventFormData, location: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="event-notes">Notes</Label>
+              <Textarea
+                id="event-notes"
+                value={eventFormData.notes}
+                onChange={(e) => setEventFormData({ ...eventFormData, notes: e.target.value })}
+              />
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" className="flex-1">Create Event</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowEventDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Task Dialog */}
+      <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Task</DialogTitle>
+            <DialogDescription>
+              Add a new task to your schedule.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleTaskSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="task-title">Title *</Label>
+              <Input
+                id="task-title"
+                value={taskFormData.title}
+                onChange={(e) => setTaskFormData({ ...taskFormData, title: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="task-start">Start Date & Time *</Label>
+              <Input
+                id="task-start"
+                type="datetime-local"
+                value={taskFormData.start_at}
+                onChange={(e) => setTaskFormData({ ...taskFormData, start_at: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="task-end">End Date & Time *</Label>
+              <Input
+                id="task-end"
+                type="datetime-local"
+                value={taskFormData.end_at}
+                onChange={(e) => setTaskFormData({ ...taskFormData, end_at: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="task-notes">Notes</Label>
+              <Textarea
+                id="task-notes"
+                value={taskFormData.notes}
+                onChange={(e) => setTaskFormData({ ...taskFormData, notes: e.target.value })}
+              />
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" className="flex-1">Create Task</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowTaskDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Job Dialog */}
+      <Dialog open={showJobDialog} onOpenChange={setShowJobDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Job</DialogTitle>
+            <DialogDescription>
+              Schedule a new service job.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleJobSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="job-customer">Customer Name *</Label>
+              <Input
+                id="job-customer"
+                value={jobFormData.customer_name}
+                onChange={(e) => setJobFormData({ ...jobFormData, customer_name: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="job-service">Service Type *</Label>
+              <Input
+                id="job-service"
+                value={jobFormData.service_type}
+                onChange={(e) => setJobFormData({ ...jobFormData, service_type: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="job-start">Start Date & Time *</Label>
+              <Input
+                id="job-start"
+                type="datetime-local"
+                value={jobFormData.scheduled_start}
+                onChange={(e) => setJobFormData({ ...jobFormData, scheduled_start: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="job-end">End Date & Time *</Label>
+              <Input
+                id="job-end"
+                type="datetime-local"
+                value={jobFormData.scheduled_end}
+                onChange={(e) => setJobFormData({ ...jobFormData, scheduled_end: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="job-address">Address</Label>
+              <Input
+                id="job-address"
+                value={jobFormData.address}
+                onChange={(e) => setJobFormData({ ...jobFormData, address: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="job-price">Price ($)</Label>
+              <Input
+                id="job-price"
+                type="number"
+                step="0.01"
+                value={jobFormData.price}
+                onChange={(e) => setJobFormData({ ...jobFormData, price: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="job-notes">Notes</Label>
+              <Textarea
+                id="job-notes"
+                value={jobFormData.notes}
+                onChange={(e) => setJobFormData({ ...jobFormData, notes: e.target.value })}
+              />
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" className="flex-1">Create Job</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowJobDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

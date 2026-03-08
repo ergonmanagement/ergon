@@ -16,6 +16,8 @@
  *       "id"?: string,
  *       "customer_id"?: string,
  *       "customer_name": string,
+ *       "customer_company_id"?: string,
+ *       "customer_company_name"?: string,
  *       "service_type": string,
  *       "status": "lead" | "scheduled" | "completed" | "paid",
  *       "scheduled_start"?: string,

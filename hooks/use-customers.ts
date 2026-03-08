@@ -9,7 +9,9 @@ import { createClient } from "@/lib/supabase/client";
 export type Customer = {
   id: string;                        // Unique identifier
   type: "customer" | "prospect";     // Customer status
-  name: string;                      // Full name or company name
+  name: string;                      // Contact person name
+  customer_company_id: string | null; // Link to customer company record
+  customer_company_name: string | null; // Customer company name for display
   email: string | null;             // Optional email address
   phone: string | null;             // Optional phone number
   address: string | null;           // Optional physical address
