@@ -30,7 +30,9 @@ export function CustomersClient() {
     phone: "",
     address: "",
     notes: "",
-    source: ""
+    source: "",
+    company_id: null as string | null,
+    company_name: null as string | null
   });
 
   const { customers, loading, error, upsertCustomer } = useCustomers({
@@ -76,7 +78,9 @@ export function CustomersClient() {
       phone: "",
       address: "",
       notes: "",
-      source: ""
+      source: "",
+      company_id: null,
+      company_name: null
     });
   };
 
@@ -94,7 +98,9 @@ export function CustomersClient() {
       phone: customer.phone || "",
       address: customer.address || "",
       notes: customer.notes || "",
-      source: customer.source || ""
+      source: customer.source || "",
+      company_id: customer.company_id || null,
+      company_name: customer.company_name || null
     });
     setSelectedCustomer(customer);
     setShowEditDialog(true);
@@ -116,7 +122,9 @@ export function CustomersClient() {
         phone: formData.phone || null,
         address: formData.address || null,
         notes: formData.notes || null,
-        source: formData.source || null
+        source: formData.source || null,
+        company_id: formData.company_id,
+        company_name: formData.company_name
       });
       setShowCreateDialog(false);
       setShowEditDialog(false);
@@ -171,8 +179,8 @@ export function CustomersClient() {
               key={key}
               onClick={() => setTypeFilter(key as any)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${typeFilter === key
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
                 }`}
             >
               {label}
@@ -263,8 +271,8 @@ export function CustomersClient() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${customer.type === "customer"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-yellow-100 text-yellow-800"
                         }`}>
                         {customer.type}
                       </span>
@@ -325,8 +333,8 @@ export function CustomersClient() {
                     <div>
                       <div className="font-medium text-gray-900">{customer.name}</div>
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${customer.type === "customer"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-yellow-100 text-yellow-800"
                         }`}>
                         {customer.type}
                       </span>
@@ -567,8 +575,8 @@ export function CustomersClient() {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">{selectedCustomer.name}</h3>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${selectedCustomer.type === "customer"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-yellow-100 text-yellow-800"
                     }`}>
                     {selectedCustomer.type}
                   </span>

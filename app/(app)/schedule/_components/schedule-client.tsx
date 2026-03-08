@@ -97,6 +97,7 @@ export function ScheduleClient() {
 
   const [jobFormData, setJobFormData] = useState({
     customer_name: "",
+    company_name: "",
     service_type: "",
     scheduled_start: "",
     scheduled_end: "",
@@ -159,6 +160,7 @@ export function ScheduleClient() {
   const resetJobForm = () => {
     setJobFormData({
       customer_name: "",
+      company_name: "",
       service_type: "",
       scheduled_start: "",
       scheduled_end: "",
@@ -209,6 +211,7 @@ export function ScheduleClient() {
     try {
       await upsertJob({
         customer_name: jobFormData.customer_name,
+        company_name: jobFormData.company_name,
         service_type: jobFormData.service_type,
         status: "scheduled",
         scheduled_start: jobFormData.scheduled_start,
@@ -217,8 +220,7 @@ export function ScheduleClient() {
         price: jobFormData.price ? parseFloat(jobFormData.price) : null,
         notes: jobFormData.notes,
         customer_id: null,
-        source: "schedule",
-        company_name: null // Will be auto-populated by trigger
+        source: "schedule"
       });
       setShowJobDialog(false);
       resetJobForm();
@@ -648,6 +650,15 @@ export function ScheduleClient() {
                 value={jobFormData.customer_name}
                 onChange={(e) => setJobFormData({ ...jobFormData, customer_name: e.target.value })}
                 required
+              />
+            </div>
+            <div>
+              <Label htmlFor="job-company">Company Name</Label>
+              <Input
+                id="job-company"
+                value={jobFormData.company_name}
+                onChange={(e) => setJobFormData({ ...jobFormData, company_name: e.target.value })}
+                placeholder="Enter company name"
               />
             </div>
             <div>

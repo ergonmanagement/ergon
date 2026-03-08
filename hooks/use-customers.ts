@@ -10,8 +10,8 @@ export type Customer = {
   id: string;                        // Unique identifier
   type: "customer" | "prospect";     // Customer status
   name: string;                      // Contact person name
-  customer_company_id: string | null; // Link to customer company record
-  customer_company_name: string | null; // Customer company name for display
+  company_id: string | null;         // Link to companies table
+  company_name: string | null;       // Company name for display
   email: string | null;             // Optional email address
   phone: string | null;             // Optional phone number
   address: string | null;           // Optional physical address
