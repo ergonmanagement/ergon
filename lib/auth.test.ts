@@ -10,6 +10,17 @@ jest.mock("@/lib/supabase/server", () => ({
         verifyOtp: (args: unknown) => mockVerifyOtp(args),
         getClaims: () => mockGetClaims(),
       },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: () =>
+              Promise.resolve({
+                data: { company_id: "company-1" },
+                error: null,
+              }),
+          }),
+        }),
+      }),
     }),
 }));
 

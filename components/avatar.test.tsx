@@ -3,27 +3,27 @@ import { Avatar, getInitials } from "@/components/avatar";
 
 describe("getInitials", () => {
   it("returns first letter of first and last name when both provided", () => {
-    expect(getInitials("John", "Doe")).toBe("JD");
-    expect(getInitials("Jane", "Smith")).toBe("JS");
+  expect(getInitials("John", "Doe", undefined)).toBe("JD");
+  expect(getInitials("Jane", "Smith", undefined)).toBe("JS");
   });
 
   it("returns first two chars of first name when only first name provided", () => {
-    expect(getInitials("John", null)).toBe("JO");
-    expect(getInitials("A", null)).toBe("A");
+  expect(getInitials("John", null, undefined)).toBe("JO");
+  expect(getInitials("A", null, undefined)).toBe("A");
   });
 
   it("returns first two chars of email local part when no name", () => {
-    expect(getInitials(null, null, "john@example.com")).toBe("JO");
-    expect(getInitials(null, null, "a@b.com")).toBe("A");
+  expect(getInitials(null, null, "john@example.com")).toBe("JO");
+  expect(getInitials(null, null, "a@b.com")).toBe("A");
   });
 
   it("handles empty and whitespace", () => {
-    expect(getInitials("", "", undefined)).toBe("?");
-    expect(getInitials("  ", "  ", undefined)).toBe("?");
+  expect(getInitials("", "", undefined)).toBe("?");
+  expect(getInitials("  ", "  ", undefined)).toBe("?");
   });
 
   it("trims whitespace from names", () => {
-    expect(getInitials("  John  ", "  Doe  ")).toBe("JD");
+  expect(getInitials("  John  ", "  Doe  ", undefined)).toBe("JD");
   });
 });
 

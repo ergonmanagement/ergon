@@ -18,7 +18,7 @@ describe("UpdatePasswordForm", () => {
   it("renders heading and password field", () => {
     render(<UpdatePasswordForm />);
     expect(
-      screen.getByRole("heading", { name: "Reset Your Password" })
+      screen.getByRole("heading", { name: "Set a new password" })
     ).toBeInTheDocument();
     expect(
       screen.getByText("Please enter your new password below.")

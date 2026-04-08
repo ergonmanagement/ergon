@@ -6,7 +6,11 @@ type PageProps = {
   params: { customerId: string };
 };
 
-async function CustomerDetailContent({ customerId }: { customerId: string }) {
+export async function CustomerDetailContent({
+  customerId,
+}: {
+  customerId: string;
+}) {
   await requireAuth();
   return <CustomerDetailClient customerId={customerId} />;
 }

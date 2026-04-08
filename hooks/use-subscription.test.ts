@@ -41,6 +41,9 @@ describe("useSubscription", () => {
         data: {
           id: "c1",
           name: "Test Co",
+          service_type: "Detailing",
+          phone: "555-0100",
+          address: null,
           subscription_status: "trial",
           trial_started_at: null,
           trial_ends_at: null,

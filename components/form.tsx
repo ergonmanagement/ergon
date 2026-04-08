@@ -3,7 +3,7 @@
 import type { InputHTMLAttributes } from "react";
 
 const inputClassName =
-  "border rounded px-3 py-2 bg-white text-slate-900 placeholder:text-slate-400";
+  "border border-input rounded-md px-3 py-2 bg-background text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
 type FormFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -22,11 +22,15 @@ export function FormField({
     <div className="flex flex-col gap-2">
       {labelAside ? (
         <div className="flex items-center justify-between">
-          <label htmlFor={id}>{label}</label>
+          <label htmlFor={id} className="text-sm font-medium text-gray-900">
+            {label}
+          </label>
           {labelAside}
         </div>
       ) : (
-        <label htmlFor={id}>{label}</label>
+        <label htmlFor={id} className="text-sm font-medium text-gray-900">
+          {label}
+        </label>
       )}
       <input
         id={id}
@@ -46,7 +50,7 @@ export function FormError({
 }) {
   const content = message ?? children;
   if (!content) return null;
-  return <p className="text-sm text-red-500">{content}</p>;
+  return <p className="text-sm text-destructive">{content}</p>;
 }
 
 export function FormSubmitButton({
@@ -61,7 +65,7 @@ export function FormSubmitButton({
       disabled={disabled}
       className={
         className ??
-        "bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 disabled:opacity-50"
+        "rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
       }
       {...props}
     >

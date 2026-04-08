@@ -21,6 +21,7 @@ export type Job = {
   price: number | null;              // Job price (null for leads/quotes)
   notes: string | null;              // Optional job notes
   source: string | null;             // Optional source of lead
+  created_at?: string;               // Row creation time (ISO string); present from API select "*"
   company_name?: string | null;      // Set by DB trigger; not sent on upsert
 };
 

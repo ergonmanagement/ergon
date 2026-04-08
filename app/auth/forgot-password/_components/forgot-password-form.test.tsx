@@ -21,7 +21,7 @@ describe("ForgotPasswordForm", () => {
   it("renders form when success is false", () => {
     render(<ForgotPasswordForm />);
     expect(
-      screen.getByRole("heading", { name: "Reset Your Password" })
+      screen.getByRole("heading", { name: "Reset your password" })
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(
@@ -38,7 +38,7 @@ describe("ForgotPasswordForm", () => {
     });
     render(<ForgotPasswordForm />);
     expect(
-      screen.getByRole("heading", { name: "Check Your Email" })
+      screen.getByRole("heading", { name: "Check your email" })
     ).toBeInTheDocument();
     expect(
       screen.getByText(/If you registered using your email and password/)

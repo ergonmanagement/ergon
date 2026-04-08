@@ -17,7 +17,9 @@ describe("SignUpForm", () => {
 
   it("renders heading and all form fields", () => {
     render(<SignUpForm />);
-    expect(screen.getByRole("heading", { name: "Sign up" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Create your account" })
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("First Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Last Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();

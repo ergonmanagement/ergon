@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useFinanceEntries, FinanceEntryType } from "@/hooks/use-finance-entries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -139,8 +140,8 @@ export function FinanceClient() {
 
   const getTypeColor = (type: FinanceEntryType) => {
     return type === "revenue"
-      ? "bg-green-100 text-green-800 border-green-200"
-      : "bg-red-100 text-red-800 border-red-200";
+      ? "bg-success/15 text-success border-success/25"
+      : "bg-destructive/10 text-destructive border-destructive/25";
   };
 
   const getTypeIcon = (type: FinanceEntryType) => {
@@ -148,12 +149,15 @@ export function FinanceClient() {
   };
 
   if (loading) {
-    return <div className="text-sm text-gray-600">Loading finance data...</div>;
+    return <div className="text-sm text-muted-foreground">Loading finance data...</div>;
   }
 
   if (error) {
     return (
-      <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg" role="alert">
+      <div
+        className="text-sm text-destructive bg-destructive/5 border border-destructive/20 p-3 rounded-lg"
+        role="alert"
+      >
         {error}
       </div>
     );
@@ -165,52 +169,53 @@ export function FinanceClient() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Finance</h1>
-        <Button onClick={handleCreate} className="flex items-center gap-2">
-          <Plus size={16} />
-          Add Entry
-        </Button>
-      </div>
+      <AppPageHeader
+        title="Finance"
+        actions={
+          <Button onClick={handleCreate} className="flex items-center gap-2">
+            <Plus size={16} />
+            Add Entry
+          </Button>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="ergon-card p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Revenue</p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(revenue)}</p>
+              <p className="text-sm font-medium text-muted-foreground">Revenue</p>
+              <p className="text-2xl font-bold text-success tabular-nums">{formatCurrency(revenue)}</p>
             </div>
-            <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-green-600" />
+            <div className="h-12 w-12 bg-success/15 rounded-full flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-success" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="ergon-card p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Expenses</p>
-              <p className="text-2xl font-bold text-red-600">{formatCurrency(expenses)}</p>
+              <p className="text-sm font-medium text-muted-foreground">Expenses</p>
+              <p className="text-2xl font-bold text-destructive tabular-nums">{formatCurrency(expenses)}</p>
             </div>
-            <div className="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center">
-              <TrendingDown className="h-6 w-6 text-red-600" />
+            <div className="h-12 w-12 bg-destructive/10 rounded-full flex items-center justify-center">
+              <TrendingDown className="h-6 w-6 text-destructive" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="ergon-card p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Profit</p>
-              <p className={`text-2xl font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <p className="text-sm font-medium text-muted-foreground">Profit</p>
+              <p className={`text-2xl font-bold tabular-nums ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>
                 {formatCurrency(profit)}
               </p>
             </div>
-            <div className={`h-12 w-12 rounded-full flex items-center justify-center ${profit >= 0 ? 'bg-green-100' : 'bg-red-100'
+            <div className={`h-12 w-12 rounded-full flex items-center justify-center ${profit >= 0 ? 'bg-success/15' : 'bg-destructive/10'
               }`}>
-              <DollarSign className={`h-6 w-6 ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+              <DollarSign className={`h-6 w-6 ${profit >= 0 ? 'text-success' : 'text-destructive'}`} />
             </div>
           </div>
         </div>
@@ -219,7 +224,7 @@ export function FinanceClient() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Time Filter */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex rounded-lg border border-border bg-muted/60 p-1">
           {[
             { key: "week", label: "This Week" },
             { key: "month", label: "This Month" },
@@ -229,8 +234,8 @@ export function FinanceClient() {
               key={key}
               onClick={() => setTimeFilter(key as TimeFilter)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${timeFilter === key
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-card text-primary shadow-sm ring-1 ring-border"
+                  : "text-muted-foreground hover:text-foreground"
                 }`}
             >
               {label}
@@ -239,7 +244,7 @@ export function FinanceClient() {
         </div>
 
         {/* Type Filter */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex rounded-lg border border-border bg-muted/60 p-1">
           {[
             { key: "all", label: "All" },
             { key: "revenue", label: "Revenue" },
@@ -249,8 +254,8 @@ export function FinanceClient() {
               key={key}
               onClick={() => setTypeFilter(key as any)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${typeFilter === key
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-card text-primary shadow-sm ring-1 ring-border"
+                  : "text-muted-foreground hover:text-foreground"
                 }`}
             >
               {label}
@@ -261,9 +266,9 @@ export function FinanceClient() {
 
       {/* Entries List */}
       {entries.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-600 mb-4">
+        <div className="text-center py-12 bg-muted/40 rounded-lg border border-dashed border-border">
+          <FileText className="mx-auto h-12 w-12 text-muted-foreground/70 mb-4" />
+          <p className="text-muted-foreground mb-4">
             No finance entries for this period.
           </p>
           <Button onClick={handleCreate} variant="outline">
@@ -273,33 +278,33 @@ export function FinanceClient() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="hidden md:block ergon-card overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Description
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Category
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-border">
                 {entries.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-gray-50">
+                  <tr key={entry.id} className="hover:bg-muted/40">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         {getTypeIcon(entry.type)}
@@ -309,20 +314,20 @@ export function FinanceClient() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 font-medium">
+                      <div className="text-sm text-foreground font-medium">
                         {entry.title || "—"}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {entry.category || "—"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-sm font-medium ${entry.type === 'revenue' ? 'text-green-600' : 'text-red-600'
+                      <span className={`text-sm font-medium ${entry.type === 'revenue' ? 'text-success' : 'text-destructive'
                         }`}>
                         {entry.type === 'expense' ? '-' : ''}{formatCurrency(entry.amount)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {entry.entry_date ? new Date(entry.entry_date).toLocaleDateString() : "—"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
@@ -352,7 +357,7 @@ export function FinanceClient() {
             {entries.map((entry) => (
               <div
                 key={entry.id}
-                className="bg-white border border-gray-200 rounded-lg p-4"
+                className="ergon-card p-4"
               >
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2">
@@ -361,14 +366,14 @@ export function FinanceClient() {
                       {entry.type}
                     </span>
                   </div>
-                  <span className={`text-lg font-bold ${entry.type === 'revenue' ? 'text-green-600' : 'text-red-600'
+                  <span className={`text-lg font-bold tabular-nums ${entry.type === 'revenue' ? 'text-success' : 'text-destructive'
                     }`}>
                     {entry.type === 'expense' ? '-' : ''}{formatCurrency(entry.amount)}
                   </span>
                 </div>
 
-                <div className="space-y-1 text-sm text-gray-600 mb-3">
-                  <div className="font-medium text-gray-900">
+                <div className="space-y-1 text-sm text-muted-foreground mb-3">
+                  <div className="font-medium text-foreground">
                     {entry.title || "No title"}
                   </div>
                   {entry.category && (
@@ -594,7 +599,7 @@ export function FinanceClient() {
                     {selectedEntry.type}
                   </span>
                 </div>
-                <span className={`text-xl font-bold ${selectedEntry.type === 'revenue' ? 'text-green-600' : 'text-red-600'
+                <span className={`text-xl font-bold tabular-nums ${selectedEntry.type === 'revenue' ? 'text-success' : 'text-destructive'
                   }`}>
                   {selectedEntry.type === 'expense' ? '-' : ''}{formatCurrency(selectedEntry.amount)}
                 </span>
@@ -602,20 +607,20 @@ export function FinanceClient() {
 
               <div className="space-y-2 text-sm">
                 <div>
-                  <h4 className="font-medium text-gray-900">Description</h4>
-                  <p className="text-gray-600">{selectedEntry.description || "No description"}</p>
+                  <h4 className="font-medium text-foreground">Description</h4>
+                  <p className="text-muted-foreground">{selectedEntry.description || "No description"}</p>
                 </div>
 
                 {selectedEntry.category && (
                   <div>
-                    <h4 className="font-medium text-gray-900">Category</h4>
-                    <p className="text-gray-600">{selectedEntry.category}</p>
+                    <h4 className="font-medium text-foreground">Category</h4>
+                    <p className="text-muted-foreground">{selectedEntry.category}</p>
                   </div>
                 )}
 
                 <div>
-                  <h4 className="font-medium text-gray-900">Date</h4>
-                  <p className="text-gray-600 flex items-center gap-1">
+                  <h4 className="font-medium text-foreground">Date</h4>
+                  <p className="text-muted-foreground flex items-center gap-1">
                     <Calendar size={12} />
                     {selectedEntry.date ? new Date(selectedEntry.date).toLocaleDateString() : "No date"}
                   </p>

@@ -73,7 +73,7 @@ export type FinanceUpsertBodyType = z.infer<typeof FinanceUpsertBody>;
 
 export const MarketingGenerateBody = z.object({
   channel: z.enum(["social_post", "email", "sms", "flyer"]),
-  context: z.string().nullable().optional(),
+  context: z.string().max(2000).nullable().optional(),
 });
 
 export type MarketingGenerateBodyType = z.infer<typeof MarketingGenerateBody>;
@@ -93,6 +93,11 @@ export const OnboardingBody = z.object({
   company_name: z.string().min(1),
   service_type: z.string().min(1),
   phone: z.string().min(1),
+  address: z.string().nullable().optional(),
+  employees_count: z.number().int().nonnegative().nullable().optional(),
+  years_in_business: z.number().int().nonnegative().nullable().optional(),
+  estimated_revenue: z.number().nonnegative().nullable().optional(),
+  referral_source: z.string().nullable().optional(),
 });
 
 export type OnboardingBodyType = z.infer<typeof OnboardingBody>;

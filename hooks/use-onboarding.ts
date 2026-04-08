@@ -4,10 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+/** Matches highLevelDesign §4.4 (required on this step: company, service type, phone). */
 export type OnboardingParams = {
   companyName: string;
   serviceType: string;
   phone: string;
+  address?: string | null;
+  employees_count?: number | null;
+  years_in_business?: number | null;
+  estimated_revenue?: number | null;
+  referral_source?: string | null;
 };
 
 export function useOnboarding() {
@@ -16,16 +22,26 @@ export function useOnboarding() {
   const [error, setError] = useState<string | null>(null);
 
   async function completeOnboarding(params: OnboardingParams) {
-    const { companyName, serviceType, phone } = params;
+    const {
+      companyName,
+      serviceType,
+      phone,
+      address,
+      employees_count,
+      years_in_business,
+      estimated_revenue,
+      referral_source,
+    } = params;
 
     setIsLoading(true);
     setError(null);
 
     try {
       const supabase = createClient();
-
-      // Get the current session to ensure we're authenticated
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
       if (sessionError || !session) {
         setError("Authentication required. Please sign in again.");
@@ -33,46 +49,37 @@ export function useOnboarding() {
         return;
       }
 
-      console.log('Calling onboarding Edge Function with:', {
-        company_name: companyName,
-        service_type: serviceType,
-        phone,
-      });
-
-      const { data, error } = await supabase.functions.invoke("onboarding", {
-        body: {
-          company_name: companyName,
-          service_type: serviceType,
-          phone,
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "onboarding",
+        {
+          body: {
+            company_name: companyName,
+            service_type: serviceType,
+            phone,
+            address: address ?? null,
+            employees_count: employees_count ?? null,
+            years_in_business: years_in_business ?? null,
+            estimated_revenue: estimated_revenue ?? null,
+            referral_source: referral_source ?? null,
+          },
         },
-      });
+      );
 
-      console.log('Edge Function response:', { data, error });
-
-      if (error) {
-        console.error('Edge Function error:', error);
-        let errorMessage = "Unable to complete onboarding.";
-
-        if (error.message) {
-          errorMessage = `Error: ${error.message}`;
-        }
-
-        setError(errorMessage);
+      if (fnError) {
+        setError(fnError.message || "Unable to complete onboarding.");
         setIsLoading(false);
         return;
       }
 
-      if (data && (data as any).error) {
-        console.error('Edge Function returned error:', (data as any));
-        setError(`Error: ${(data as any).error}`);
+      if (data && (data as { error?: string }).error) {
+        setError((data as { error: string }).error);
         setIsLoading(false);
         return;
       }
 
-      console.log('Onboarding successful, redirecting to dashboard');
+      setIsLoading(false);
       router.push("/dashboard");
-    } catch (err) {
-      console.error('Unexpected error:', err);
+    } catch {
       setError("Unexpected error during onboarding. Please try again.");
       setIsLoading(false);
     }
@@ -80,4 +87,3 @@ export function useOnboarding() {
 
   return { completeOnboarding, isLoading, error };
 }
-

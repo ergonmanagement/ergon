@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FormField, FormError, FormSubmitButton } from "@/components/form";
+import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useUpdatePassword } from "@/hooks/use-update-password";
 
 export function UpdatePasswordForm() {
@@ -14,9 +15,12 @@ export function UpdatePasswordForm() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Reset Your Password</h1>
-      <p className="text-sm">Please enter your new password below.</p>
+    <div className="flex flex-col gap-6">
+      <AppPageHeader
+        title="Set a new password"
+        variant="minimal"
+        description="Please enter your new password below."
+      />
       <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
         <FormField
           label="New password"

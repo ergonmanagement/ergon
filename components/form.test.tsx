@@ -66,7 +66,7 @@ describe("FormError", () => {
   it("renders message when provided", () => {
     render(<FormError message="Invalid email" />);
     expect(screen.getByText("Invalid email")).toBeInTheDocument();
-    expect(screen.getByText("Invalid email")).toHaveClass("text-red-500");
+    expect(screen.getByText("Invalid email")).toHaveClass("text-destructive");
   });
 
   it("renders children when message is not provided", () => {

@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.className} antialiased bg-gray-50 text-gray-900 min-h-screen overflow-x-hidden`}>
+      <body className={`${geistSans.className} min-h-screen overflow-x-hidden`}>
         {/* All page content is rendered here through the children prop */}
         {children}
       </body>

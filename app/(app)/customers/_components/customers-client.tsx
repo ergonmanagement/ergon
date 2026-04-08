@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useCustomers, Customer } from "@/hooks/use-customers";
+import { AppPageHeader } from "@/components/layout/app-page-header";
+import { useCustomers } from "@/hooks/use-customers";
 
 type CustomerType = "customer" | "prospect";
 import { Button } from "@/components/ui/button";
@@ -48,26 +49,28 @@ export function CustomersClient() {
   );
 
   const sortedCustomers = [...filteredCustomers].sort((a, b) => {
-    let aVal, bVal;
+    let cmp = 0;
     switch (sortBy) {
       case "name":
-        aVal = a.name;
-        bVal = b.name;
+        cmp = a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
         break;
       case "type":
-        aVal = a.type;
-        bVal = b.type;
+        cmp = a.type.localeCompare(b.type);
         break;
+      case "created_at": {
+        const ta = a.created_at
+          ? new Date(a.created_at).getTime()
+          : 0;
+        const tb = b.created_at
+          ? new Date(b.created_at).getTime()
+          : 0;
+        cmp = ta - tb;
+        break;
+      }
       default:
-        aVal = a.id || "";
-        bVal = b.id || "";
+        cmp = 0;
     }
-
-    if (sortOrder === "asc") {
-      return aVal > bVal ? 1 : -1;
-    } else {
-      return aVal < bVal ? 1 : -1;
-    }
+    return sortOrder === "asc" ? cmp : -cmp;
   });
 
   const resetForm = () => {
@@ -139,17 +142,17 @@ export function CustomersClient() {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortBy(column);
-      setSortOrder("asc");
+      setSortOrder(column === "created_at" ? "desc" : "asc");
     }
   };
 
   if (loading) {
-    return <div className="text-sm text-gray-600">Loading customers...</div>;
+    return <div className="text-sm text-muted-foreground">Loading customers...</div>;
   }
 
   if (error) {
     return (
-      <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg" role="alert">
+      <div className="text-sm text-destructive bg-destructive/5 border border-destructive/20 p-3 rounded-lg" role="alert">
         {error}
       </div>
     );
@@ -157,19 +160,20 @@ export function CustomersClient() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-        <Button onClick={handleCreate} className="flex items-center gap-2">
-          <Plus size={16} />
-          Add Customer
-        </Button>
-      </div>
+      <AppPageHeader
+        title="Customers"
+        actions={
+          <Button onClick={handleCreate} className="flex items-center gap-2">
+            <Plus size={16} />
+            Add Customer
+          </Button>
+        }
+      />
 
       {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Filter Tabs */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex rounded-lg border border-border bg-muted/60 p-1">
           {[
             { key: "all", label: "All" },
             { key: "customer", label: "Customers" },
@@ -179,8 +183,8 @@ export function CustomersClient() {
               key={key}
               onClick={() => setTypeFilter(key as any)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${typeFilter === key
-                ? "bg-white text-blue-600 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-card text-primary shadow-sm ring-1 ring-border"
+                : "text-muted-foreground hover:text-foreground"
                 }`}
             >
               {label}
@@ -190,7 +194,7 @@ export function CustomersClient() {
 
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
           <Input
             placeholder="Search customers..."
             value={search}
@@ -202,8 +206,8 @@ export function CustomersClient() {
 
       {/* Customers Table/List */}
       {sortedCustomers.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-600 mb-4">
+        <div className="text-center py-12 bg-muted/40 rounded-lg border border-dashed border-border">
+          <p className="text-muted-foreground mb-4">
             {search || typeFilter !== "all"
               ? "No customers match your current filters."
               : "No customers yet. Add your first customer to get started."
@@ -218,9 +222,9 @@ export function CustomersClient() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="hidden md:block ergon-card overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
                   {[
                     { key: "name", label: "Name" },
@@ -230,38 +234,38 @@ export function CustomersClient() {
                   ].map(({ key, label }) => (
                     <th
                       key={key}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted/80"
                       onClick={() => key !== "contact" && handleSort(key as any)}
                     >
                       <div className="flex items-center gap-1">
                         {label}
                         {sortBy === key && (
-                          <span className="text-blue-600">
+                          <span className="text-primary">
                             {sortOrder === "asc" ? "↑" : "↓"}
                           </span>
                         )}
                       </div>
                     </th>
                   ))}
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-border">
                 {sortedCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
+                  <tr key={customer.id} className="hover:bg-muted/40">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-8 w-8">
-                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                            <User className="h-4 w-4 text-blue-600" />
+                          <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center">
+                            <User className="h-4 w-4 text-primary" />
                           </div>
                         </div>
                         <div className="ml-4">
-                          <div className="font-medium text-gray-900">{customer.name}</div>
+                          <div className="font-medium text-foreground">{customer.name}</div>
                           {customer.address && (
-                            <div className="text-sm text-gray-500 flex items-center gap-1">
+                            <div className="text-sm text-muted-foreground flex items-center gap-1">
                               <MapPin size={12} />
                               {customer.address}
                             </div>
@@ -277,7 +281,7 @@ export function CustomersClient() {
                         {customer.type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       <div className="space-y-1">
                         {customer.email && (
                           <div className="flex items-center gap-2">
@@ -293,8 +297,10 @@ export function CustomersClient() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {customer.source || "—"}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      {customer.created_at
+                        ? new Date(customer.created_at).toLocaleDateString()
+                        : "—"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <Button
@@ -323,15 +329,15 @@ export function CustomersClient() {
             {sortedCustomers.map((customer) => (
               <div
                 key={customer.id}
-                className="bg-white border border-gray-200 rounded-lg p-4"
+                className="ergon-card p-4"
               >
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      <User className="h-5 w-5 text-blue-600" />
+                    <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center">
+                      <User className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">{customer.name}</div>
+                      <div className="font-medium text-foreground">{customer.name}</div>
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${customer.type === "customer"
                         ? "bg-green-100 text-green-800"
                         : "bg-yellow-100 text-yellow-800"
@@ -342,7 +348,7 @@ export function CustomersClient() {
                   </div>
                 </div>
 
-                <div className="space-y-1 text-sm text-gray-600 mb-3">
+                <div className="space-y-1 text-sm text-muted-foreground mb-3">
                   {customer.email && (
                     <div className="flex items-center gap-2">
                       <Mail size={12} />
@@ -569,11 +575,11 @@ export function CustomersClient() {
             <div className="space-y-6">
               {/* Customer Info */}
               <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
-                  <User className="h-8 w-8 text-blue-600" />
+                <div className="h-16 w-16 rounded-full bg-primary/15 flex items-center justify-center">
+                  <User className="h-8 w-8 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{selectedCustomer.name}</h3>
+                  <h3 className="text-lg font-semibold text-foreground">{selectedCustomer.name}</h3>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${selectedCustomer.type === "customer"
                     ? "bg-green-100 text-green-800"
                     : "bg-yellow-100 text-yellow-800"
@@ -585,23 +591,23 @@ export function CustomersClient() {
 
               {/* Contact Info */}
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Contact Information</h4>
+                <h4 className="text-sm font-medium text-foreground mb-2">Contact Information</h4>
                 <div className="space-y-2 text-sm">
                   {selectedCustomer.email && (
                     <div className="flex items-center gap-2">
-                      <Mail size={16} className="text-gray-400" />
+                      <Mail size={16} className="text-muted-foreground" />
                       {selectedCustomer.email}
                     </div>
                   )}
                   {selectedCustomer.phone && (
                     <div className="flex items-center gap-2">
-                      <Phone size={16} className="text-gray-400" />
+                      <Phone size={16} className="text-muted-foreground" />
                       {selectedCustomer.phone}
                     </div>
                   )}
                   {selectedCustomer.address && (
                     <div className="flex items-center gap-2">
-                      <MapPin size={16} className="text-gray-400" />
+                      <MapPin size={16} className="text-muted-foreground" />
                       {selectedCustomer.address}
                     </div>
                   )}
@@ -611,8 +617,8 @@ export function CustomersClient() {
               {/* Notes */}
               {selectedCustomer.notes && (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Notes</h4>
-                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                  <h4 className="text-sm font-medium text-foreground mb-2">Notes</h4>
+                  <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg border border-border">
                     {selectedCustomer.notes}
                   </p>
                 </div>
@@ -620,8 +626,8 @@ export function CustomersClient() {
 
               {/* Job History Placeholder */}
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Job History</h4>
-                <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg text-center">
+                <h4 className="text-sm font-medium text-foreground mb-2">Job History</h4>
+                <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg text-center border border-border">
                   Job history and revenue total will be displayed here.
                 </div>
               </div>

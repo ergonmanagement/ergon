@@ -10,7 +10,13 @@ async function AppLayoutContent({ children }: { children: ReactNode }) {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground text-sm">
+          Loading…
+        </div>
+      }
+    >
       <AppLayoutContent>{children}</AppLayoutContent>
     </Suspense>
   );

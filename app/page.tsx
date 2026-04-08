@@ -3,113 +3,135 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-async function HomeContent() {
+export async function HomeContent() {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  let user: unknown = null;
+  try {
+    const { data } = await supabase.auth.getClaims();
+    user = data?.claims;
+  } catch {
+    user = null;
+  }
 
   if (user) {
     redirect("/dashboard");
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
-      <main className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Hero Section */}
-          <div className="mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-700 mb-8">
-              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-              Multi-tenant • Secure • Built for Service Businesses
-            </div>
-
-            <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
-              Run your business with
-              <span className="text-blue-600"> clarity</span>
-            </h1>
-
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Customers, jobs, schedule, finance, and marketing—organized in one place.
-              Start your free trial in minutes.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-              <Link
-                href="/auth/sign-up"
-                className="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                Start Free Trial
-              </Link>
-              <Link
-                href="/auth/login"
-                className="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                Sign In
-              </Link>
-            </div>
-
-            <p className="text-sm text-gray-500">
-              No credit card required • 14-day free trial
-            </p>
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4">
+          <span className="text-lg font-semibold text-foreground">Ergon</span>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Link
+              href="/pricing"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/auth/login"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/auth/sign-up"
+              className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+            >
+              Start free trial
+            </Link>
           </div>
+        </div>
+      </header>
 
-          {/* Features Preview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                <span className="text-2xl">📅</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Schedule</h3>
-              <p className="text-sm text-gray-600">Week + month view with fast edits</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                <span className="text-2xl">🔧</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Jobs</h3>
-              <p className="text-sm text-gray-600">Track leads to paid work, end-to-end</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                <span className="text-2xl">👥</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Customers</h3>
-              <p className="text-sm text-gray-600">Prospects, notes, and contact info</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                <span className="text-2xl">💰</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Finance</h3>
-              <p className="text-sm text-gray-600">Revenue/expense totals, server-calculated</p>
-            </div>
+      <main className="mx-auto max-w-5xl px-5 py-16 md:py-20">
+        <div className="max-w-3xl">
+          <p className="text-sm font-medium text-primary mb-4">
+            Multi-tenant · Secure · Built for service businesses
+          </p>
+          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground leading-tight">
+            Run your business with{" "}
+            <span className="text-primary">clarity</span>
+          </h1>
+          <p className="mt-6 text-lg text-muted-foreground leading-relaxed">
+            Customers, jobs, schedule, finance, and marketing—organized in one
+            calm, professional workspace.
+          </p>
+          <div className="mt-10 flex flex-col sm:flex-row gap-3">
+            <Link
+              href="/auth/sign-up"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-3 text-base font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors"
+            >
+              Start free trial
+            </Link>
+            <Link
+              href="/auth/login"
+              className="inline-flex items-center justify-center rounded-md border border-border bg-card px-8 py-3 text-base font-medium text-foreground shadow-sm hover:bg-muted/50 transition-colors"
+            >
+              Sign in
+            </Link>
           </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            No credit card required · Full access during your trial
+          </p>
+        </div>
 
-          {/* CTA Section */}
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Ready to organize your business?
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Join service businesses already using Ergon to streamline their operations.
-            </p>
-            <div className="flex items-center justify-center gap-4">
-              <Link
-                href="/auth/sign-up"
-                className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                Get Started Free
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                View Pricing
-              </Link>
+        <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[
+            {
+              icon: "📅",
+              title: "Schedule",
+              desc: "Week and month views with fast edits",
+            },
+            {
+              icon: "🔧",
+              title: "Jobs",
+              desc: "From lead to paid, end to end",
+            },
+            {
+              icon: "👥",
+              title: "Customers",
+              desc: "Prospects, notes, and contact info",
+            },
+            {
+              icon: "💰",
+              title: "Finance",
+              desc: "Revenue and expense totals you can trust",
+            },
+          ].map((item) => (
+            <div key={item.title} className="ergon-card p-6">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-md bg-accent text-lg">
+                <span aria-hidden>{item.icon}</span>
+              </div>
+              <h3 className="font-semibold text-foreground">{item.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground leading-snug">
+                {item.desc}
+              </p>
             </div>
+          ))}
+        </div>
+
+        <div className="mt-16 ergon-card p-8 md:p-10 text-center max-w-3xl mx-auto">
+          <h2 className="text-xl font-semibold text-foreground">
+            Ready to organize your business?
+          </h2>
+          <p className="mt-3 text-muted-foreground text-sm md:text-base">
+            Same tools serious operators use—without the clutter.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/auth/sign-up"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Get started free
+            </Link>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center justify-center rounded-md border border-border bg-background px-6 py-3 text-sm font-medium hover:bg-muted/60 transition-colors"
+            >
+              View pricing
+            </Link>
           </div>
         </div>
       </main>
@@ -119,11 +141,13 @@ async function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground text-sm">
+          Loading…
+        </div>
+      }
+    >
       <HomeContent />
     </Suspense>
   );
