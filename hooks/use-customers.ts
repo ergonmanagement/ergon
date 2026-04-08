@@ -17,6 +17,7 @@ export type Customer = {
   address: string | null;           // Optional physical address
   notes: string | null;             // Optional notes about the customer
   source: string | null;            // Optional source of lead (referral, website, etc.)
+  created_at?: string;              // When the record was created (ISO); present from API select "*"
 };
 
 /** Filter parameters for customer queries */
@@ -47,6 +48,20 @@ export function useCustomers(initialFilter?: CustomersFilter) {
   const [error, setError] = useState<string | null>(null);
 
   const [filter, setFilter] = useState<CustomersFilter>(initialFilter ?? {});
+
+  // Props like `type` / `search` from the parent must update `filter`; `useState(initialFilter)`
+  // only uses the first render's value, so tabs and search would otherwise never refetch.
+  const hasInitialFilter = initialFilter !== undefined;
+  const incomingType = initialFilter?.type;
+  const incomingSearch = initialFilter?.search;
+  useEffect(() => {
+    if (!hasInitialFilter) return;
+    setFilter((prev) => {
+      const next = { ...prev, type: incomingType, search: incomingSearch };
+      if (prev.type === next.type && prev.search === next.search) return prev;
+      return next;
+    });
+  }, [hasInitialFilter, incomingType, incomingSearch]);
 
   /**
    * Effect to load customers whenever filter parameters change

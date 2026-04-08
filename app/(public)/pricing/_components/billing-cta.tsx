@@ -11,16 +11,16 @@ export function BillingCTA() {
         type="button"
         onClick={() => void startCheckout()}
         disabled={loading}
-        className="w-full inline-flex items-center justify-center rounded-md bg-[#86BBD8] text-[#131B41] text-sm font-semibold py-2 hover:bg-[#6ea7c6] disabled:opacity-60"
+        className="w-full inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-semibold py-2.5 hover:bg-primary/90 disabled:opacity-60 transition-colors"
       >
         {loading ? "Redirecting to checkout..." : "Start subscription"}
       </button>
       {error && (
-        <p className="text-xs text-red-400" role="alert">
+        <p className="text-xs text-destructive" role="alert">
           {error}
         </p>
       )}
-      <p className="text-[11px] text-white/60 text-center">
+      <p className="text-[11px] text-muted-foreground text-center">
         You&apos;ll be taken to Stripe to securely enter payment details.
       </p>
     </div>

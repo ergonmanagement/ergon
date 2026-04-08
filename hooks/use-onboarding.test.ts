@@ -9,6 +9,10 @@ jest.mock("next/navigation", () => ({
 const mockInvoke = jest.fn();
 jest.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
+    auth: {
+      getSession: () =>
+        Promise.resolve({ data: { session: { access_token: "t" } }, error: null }),
+    },
     functions: {
       invoke: (name: string, options: unknown) => mockInvoke(name, options),
     },
@@ -30,16 +34,29 @@ describe("useOnboarding", () => {
         companyName: "Test Co",
         serviceType: "Auto detailing",
         phone: "123-456-7890",
+        address: null,
+        employees_count: 7,
+        years_in_business: null,
+        estimated_revenue: 100000,
+        referral_source: "Google search",
       });
     });
 
-    expect(mockInvoke).toHaveBeenCalledWith("onboarding", {
-      body: {
-        company_name: "Test Co",
-        service_type: "Auto detailing",
-        phone: "123-456-7890",
-      },
-    });
+    expect(mockInvoke).toHaveBeenCalledWith(
+      "onboarding",
+      expect.objectContaining({
+        body: {
+          company_name: "Test Co",
+          service_type: "Auto detailing",
+          phone: "123-456-7890",
+          address: null,
+          employees_count: 7,
+          years_in_business: null,
+          estimated_revenue: 100000,
+          referral_source: "Google search",
+        },
+      }),
+    );
     expect(mockPush).toHaveBeenCalledWith("/dashboard");
     expect(result.current.error).toBeNull();
   });
@@ -64,4 +81,3 @@ describe("useOnboarding", () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 });
-

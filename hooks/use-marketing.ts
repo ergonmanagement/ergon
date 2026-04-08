@@ -4,16 +4,13 @@
  * useMarketing
  *
  * - Client-side hook to interact with the Marketing Edge Function.
- * - Responsibilities:
- *   - List existing marketing assets for the current company.
- *   - Trigger generation of new marketing copy for a given channel/context.
  * - All AI and DB access happens in the Edge Function; this hook only
  *   invokes the function via Supabase.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { MarketingChannel } from "@/lib/marketing/langgraph/graph";
+import type { MarketingChannel } from "@/lib/marketing/types";
 
 export type MarketingAsset = {
   id: string;
@@ -31,64 +28,102 @@ export type MarketingFilter = {
   pageSize?: number;
 };
 
+const DEFAULT_PAGE_SIZE = 10;
+
 export function useMarketing(initialFilter?: MarketingFilter) {
   const [assets, setAssets] = useState<MarketingAsset[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<MarketingFilter>(initialFilter ?? {});
+  const [filter, setFilter] = useState<MarketingFilter>({
+    page: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+    ...initialFilter,
+  });
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const hasInitialFilter = initialFilter !== undefined;
+  const incomingChannel = initialFilter?.channel;
+  const incomingPage = initialFilter?.page;
+  const incomingPageSize = initialFilter?.pageSize;
 
   useEffect(() => {
-    let isMounted = true;
+    if (!hasInitialFilter) return;
+    setFilter((prev) => {
+      const next = {
+        ...prev,
+        channel: incomingChannel,
+        page: incomingPage ?? prev.page,
+        pageSize: incomingPageSize ?? prev.pageSize,
+      };
+      if (
+        prev.channel === next.channel &&
+        prev.page === next.page &&
+        prev.pageSize === next.pageSize
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [
+    hasInitialFilter,
+    incomingChannel,
+    incomingPage,
+    incomingPageSize,
+  ]);
 
-    async function load() {
-      setLoading(true);
-      setError(null);
+  const loadAssets = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-      try {
-        const supabase = createClient();
-        const params = new URLSearchParams();
-        if (filter.channel) params.set("channel", filter.channel);
-        if (filter.page) params.set("page", String(filter.page));
-        if (filter.pageSize) params.set("pageSize", String(filter.pageSize));
+    try {
+      const supabase = createClient();
+      const params = new URLSearchParams();
+      if (filter.channel) params.set("channel", filter.channel);
+      const page = filter.page ?? 1;
+      const pageSize = filter.pageSize ?? DEFAULT_PAGE_SIZE;
+      params.set("page", String(page));
+      params.set("pageSize", String(pageSize));
 
-        const { data, error } = await supabase.functions.invoke("marketing", {
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "marketing",
+        {
           method: "GET",
           headers: params.size
             ? { "X-Ergon-Query": params.toString() }
             : ({} as Record<string, string>),
-        });
+        },
+      );
 
-        if (!isMounted) return;
-
-        if (error || (data && (data as any).error)) {
-          const message =
-            (data as any)?.error ??
-            error?.message ??
-            "Failed to load marketing assets.";
-          setError(message);
-          setLoading(false);
-          return;
-        }
-
-        setAssets(((data as any)?.items ?? []) as MarketingAsset[]);
-        setTotal((data as any)?.total ?? 0);
+      if (fnError || (data && (data as any).error)) {
+        const message =
+          (data as any)?.error ??
+          fnError?.message ??
+          "Failed to load marketing assets.";
+        setError(message);
         setLoading(false);
-      } catch (err) {
-        if (!isMounted) return;
-        console.error(err);
-        setError("Unexpected error while loading marketing assets.");
-        setLoading(false);
+        return;
       }
+
+      setAssets(((data as any)?.items ?? []) as MarketingAsset[]);
+      setTotal((data as any)?.total ?? 0);
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setError("Unexpected error while loading marketing assets.");
+      setLoading(false);
     }
+  }, [
+    filter.channel,
+    filter.page,
+    filter.pageSize,
+    reloadToken,
+  ]);
 
-    void load();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [filter.channel, filter.page, filter.pageSize]);
+  useEffect(() => {
+    void loadAssets();
+  }, [loadAssets]);
 
   async function generateAsset(params: {
     channel: MarketingChannel;
@@ -99,32 +134,33 @@ export function useMarketing(initialFilter?: MarketingFilter) {
 
     try {
       const supabase = createClient();
-      const { data, error } = await supabase.functions.invoke("marketing", {
-        method: "POST",
-        body: {
-          channel: params.channel,
-          context: params.context,
-        },
-      });
+      const context =
+        params.context.trim().length > 0 ? params.context.trim() : null;
 
-      if (error || (data && (data as any).error)) {
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "marketing",
+        {
+          method: "POST",
+          body: {
+            channel: params.channel,
+            context,
+          },
+        },
+      );
+
+      if (fnError || (data && (data as any).error)) {
         const message =
           (data as any)?.error ??
-          error?.message ??
+          fnError?.message ??
           "Failed to generate marketing content.";
         setError(message);
         setGenerating(false);
         return;
       }
 
-      // Prepend the newly created asset to the list for a snappy UX.
-      const asset = (data as any).asset as MarketingAsset | undefined;
-      if (asset) {
-        setAssets((prev) => [asset, ...prev]);
-        setTotal((prev) => prev + 1);
-      }
-
       setGenerating(false);
+      setFilter((f) => ({ ...f, page: 1 }));
+      setReloadToken((t) => t + 1);
     } catch (err) {
       console.error(err);
       setError("Unexpected error while generating marketing content.");
@@ -141,6 +177,6 @@ export function useMarketing(initialFilter?: MarketingFilter) {
     filter,
     setFilter,
     generateAsset,
+    refetch: () => setReloadToken((t) => t + 1),
   };
 }
-

@@ -24,11 +24,10 @@ describe("useBillingCheckout", () => {
 
     const { result } = renderHook(() => useBillingCheckout());
 
-    // Avoid actually redirecting in tests
-    const originalLocation = window.location;
-    // @ts-expect-error override for test
-    delete (window as any).location;
-    (window as any).location = { href: "" };
+  // Avoid actually redirecting in tests
+  const originalLocation = window.location;
+  delete (window as any).location;
+  (window as any).location = { href: "" };
 
     await act(async () => {
       await result.current.startCheckout();
@@ -39,8 +38,8 @@ describe("useBillingCheckout", () => {
       expect.any(Object),
     );
 
-    // Restore location
-    window.location = originalLocation;
+  // Restore location
+  (window as any).location = originalLocation;
   });
 });
 

@@ -60,6 +60,6 @@ describe("useSignUp", () => {
         }),
       })
     );
-    expect(mockPush).toHaveBeenCalledWith("/dashboard");
+    expect(mockPush).toHaveBeenCalledWith("/auth/onboarding");
   });
 });

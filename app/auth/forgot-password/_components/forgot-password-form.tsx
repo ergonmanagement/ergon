@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FormField, FormError, FormSubmitButton } from "@/components/form";
+import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useForgotPassword } from "@/hooks/use-forgot-password";
 
 export function ForgotPasswordForm() {
@@ -17,8 +18,8 @@ export function ForgotPasswordForm() {
   if (success) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-bold">Check Your Email</h1>
-        <p className="text-sm">
+        <AppPageHeader title="Check your email" variant="minimal" />
+        <p className="text-sm text-muted-foreground leading-relaxed">
           If you registered using your email and password, you will receive a
           password reset email.
         </p>
@@ -27,9 +28,9 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Reset Your Password</h1>
-      <p className="text-sm">
+    <div className="flex flex-col gap-6">
+      <AppPageHeader title="Reset your password" variant="minimal" />
+      <p className="text-sm text-muted-foreground leading-relaxed">
         Type in your email and we&apos;ll send you a link to reset your
         password
       </p>
@@ -50,7 +51,10 @@ export function ForgotPasswordForm() {
       </form>
       <p className="text-sm text-center">
         Already have an account?{" "}
-        <Link href="/auth/login" className="text-blue-600 hover:underline">
+        <Link
+          href="/auth/login"
+          className="text-primary font-medium hover:underline underline-offset-2"
+        >
           Login
         </Link>
       </p>

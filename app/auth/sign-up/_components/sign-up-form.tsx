@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FormField, FormError, FormSubmitButton } from "@/components/form";
+import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useSignUp } from "@/hooks/use-sign-up";
 
 export function SignUpForm() {
@@ -25,8 +26,8 @@ export function SignUpForm() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Sign up</h1>
+    <div className="flex flex-col gap-6">
+      <AppPageHeader title="Create your account" variant="minimal" />
       <form onSubmit={handleSignUp} className="flex flex-col gap-4">
         <FormField
           label="First Name"
@@ -78,7 +79,10 @@ export function SignUpForm() {
       </form>
       <p className="text-sm text-center">
         Already have an account?{" "}
-        <Link href="/auth/login" className="text-blue-600 hover:underline">
+        <Link
+          href="/auth/login"
+          className="text-primary font-medium hover:underline underline-offset-2"
+        >
           Login
         </Link>
       </p>

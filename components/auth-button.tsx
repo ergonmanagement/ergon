@@ -13,7 +13,7 @@ export function AuthButton() {
   if (loading) {
     return (
       <div className="flex items-center gap-4">
-        <span className="border rounded px-3 py-1 text-sm hover:bg-gray-100"></span>
+        <span className="h-8 w-20 animate-pulse rounded-md bg-white/10" />
       </div>
     );
   }
@@ -29,20 +29,22 @@ export function AuthButton() {
         )}
         size="sm"
       />
-      <span>{user.email}</span>
+      <span className="text-sm text-ergon-cream/90 truncate max-w-[180px]">
+        {user.email}
+      </span>
       <LogoutButton />
     </div>
   ) : (
     <div className="flex gap-2">
       <Link
         href="/auth/login"
-        className="border rounded px-3 py-1 text-sm hover:bg-gray-100"
+        className="rounded-md border border-white/25 px-3 py-1.5 text-sm text-ergon-cream/90 hover:bg-white/10 transition-colors"
       >
         Sign in
       </Link>
       <Link
         href="/auth/sign-up"
-        className="bg-blue-600 text-white rounded px-3 py-1 text-sm hover:bg-blue-700"
+        className="rounded-md bg-ergon-primary px-3 py-1.5 text-sm font-semibold text-ergon-navy hover:bg-ergon-primary-hover transition-colors"
       >
         Sign up
       </Link>

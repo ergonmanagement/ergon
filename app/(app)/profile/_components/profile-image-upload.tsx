@@ -34,7 +34,7 @@ export function ProfileImageUpload({ profile }: { profile: Profile }) {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
-        className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+        className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
       >
         <Avatar
           imageUrl={uploadedUrl ?? profile.profile_picture_url}

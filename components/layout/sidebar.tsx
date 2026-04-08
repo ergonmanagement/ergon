@@ -11,7 +11,8 @@ const NAV_ITEMS = [
   { href: "/customers", label: "Customers", icon: "👥" },
   { href: "/marketing", label: "Marketing", icon: "📢" },
   { href: "/finance", label: "Finance", icon: "💰" },
-  { href: "/settings", label: "Settings", icon: "⚙️" },
+  { href: "/profile", label: "Profile", icon: "👤" },
+  { href: "/settings", label: "Account settings", icon: "⚙️" },
 ];
 
 export function Sidebar() {
@@ -19,32 +20,33 @@ export function Sidebar() {
   const { logout } = useLogout();
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-      {/* Logo/Brand */}
-      <div className="h-16 flex items-center px-6 border-b border-gray-200">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">E</span>
+    <aside className="w-64 shrink-0 bg-ergon-navy text-ergon-cream flex flex-col border-r border-white/10">
+      <div className="h-14 flex items-center px-5 border-b border-white/10">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-md bg-ergon-primary flex items-center justify-center">
+            <span className="text-ergon-navy font-bold text-sm">E</span>
           </div>
-          <span className="text-xl font-semibold text-gray-900">Ergon</span>
+          <span className="text-lg font-semibold tracking-tight">Ergon</span>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-6">
-        <ul className="space-y-2">
+      <nav className="flex-1 px-3 py-5 overflow-y-auto">
+        <ul className="space-y-1">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
-                      ? "bg-blue-50 text-blue-700 border border-blue-200"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-white/12 text-ergon-primary shadow-sm"
+                      : "text-ergon-cream/85 hover:bg-white/5 hover:text-ergon-cream"
+                  }`}
                 >
-                  <span className="text-lg">{item.icon}</span>
+                  <span className="text-base opacity-90" aria-hidden>
+                    {item.icon}
+                  </span>
                   <span>{item.label}</span>
                 </Link>
               </li>
@@ -53,17 +55,16 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-3 border-t border-white/10">
         <button
+          type="button"
           onClick={logout}
-          className="w-full flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-ergon-cream/75 hover:text-ergon-cream hover:bg-white/5 rounded-md transition-colors"
         >
-          <span className="text-lg">🚪</span>
-          <span>Sign Out</span>
+          <span aria-hidden>🚪</span>
+          Sign out
         </button>
       </div>
     </aside>
   );
 }
-

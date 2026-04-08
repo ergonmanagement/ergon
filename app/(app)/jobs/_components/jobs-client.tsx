@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useJobs, JobStatus } from "@/hooks/use-jobs";
+import { AppPageHeader } from "@/components/layout/app-page-header";
+import { useJobs, JobStatus, type Job } from "@/hooks/use-jobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,10 +11,67 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search } from "lucide-react";
 
+type JobsSortColumn =
+  | "customer"
+  | "address"
+  | "date_scheduled"
+  | "date_created"
+  | "status";
+
+function compareJobs(
+  a: Job,
+  b: Job,
+  sortBy: JobsSortColumn,
+  sortOrder: "asc" | "desc",
+): number {
+  let cmp = 0;
+  switch (sortBy) {
+    case "customer":
+      cmp = a.customer_name.localeCompare(b.customer_name, undefined, {
+        sensitivity: "base",
+      });
+      break;
+    case "address":
+      cmp = (a.address ?? "").localeCompare(b.address ?? "", undefined, {
+        sensitivity: "base",
+      });
+      break;
+    case "status":
+      cmp = a.status.localeCompare(b.status);
+      break;
+    case "date_created": {
+      const ta = a.created_at
+        ? new Date(a.created_at).getTime()
+        : 0;
+      const tb = b.created_at
+        ? new Date(b.created_at).getTime()
+        : 0;
+      cmp = ta - tb;
+      break;
+    }
+    case "date_scheduled": {
+      const aN = a.scheduled_start
+        ? new Date(a.scheduled_start).getTime()
+        : null;
+      const bN = b.scheduled_start
+        ? new Date(b.scheduled_start).getTime()
+        : null;
+      if (aN === null && bN === null) cmp = 0;
+      else if (aN === null) cmp = 1;
+      else if (bN === null) cmp = -1;
+      else cmp = aN - bN;
+      break;
+    }
+    default:
+      cmp = 0;
+  }
+  return sortOrder === "asc" ? cmp : -cmp;
+}
+
 export function JobsClient() {
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"customer" | "date_scheduled" | "date_created" | "status">("date_created");
+  const [sortBy, setSortBy] = useState<JobsSortColumn>("date_created");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -41,32 +99,9 @@ export function JobsClient() {
     job.address?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const sortedJobs = [...filteredJobs].sort((a, b) => {
-    let aVal, bVal;
-    switch (sortBy) {
-      case "customer":
-        aVal = a.customer_name;
-        bVal = b.customer_name;
-        break;
-      case "date_scheduled":
-        aVal = a.scheduled_start || "9999-12-31";
-        bVal = b.scheduled_start || "9999-12-31";
-        break;
-      case "status":
-        aVal = a.status;
-        bVal = b.status;
-        break;
-      default:
-        aVal = a.id;
-        bVal = b.id;
-    }
-
-    if (sortOrder === "asc") {
-      return aVal > bVal ? 1 : -1;
-    } else {
-      return aVal < bVal ? 1 : -1;
-    }
-  });
+  const sortedJobs = [...filteredJobs].sort((a, b) =>
+    compareJobs(a, b, sortBy, sortOrder),
+  );
 
   const resetForm = () => {
     setFormData({
@@ -126,22 +161,26 @@ export function JobsClient() {
     }
   };
 
-  const handleSort = (column: typeof sortBy) => {
+  const handleSort = (column: JobsSortColumn) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortBy(column);
-      setSortOrder("asc");
+      setSortOrder(
+        column === "date_created" || column === "date_scheduled"
+          ? "desc"
+          : "asc",
+      );
     }
   };
 
   if (loading) {
-    return <div className="text-sm text-gray-600">Loading jobs...</div>;
+    return <div className="text-sm text-muted-foreground">Loading jobs...</div>;
   }
 
   if (error) {
     return (
-      <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg" role="alert">
+      <div className="text-sm text-destructive bg-destructive/5 border border-destructive/20 p-3 rounded-lg" role="alert">
         {error}
       </div>
     );
@@ -149,19 +188,20 @@ export function JobsClient() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Jobs</h1>
-        <Button onClick={handleCreate} className="flex items-center gap-2">
-          <Plus size={16} />
-          Add Job
-        </Button>
-      </div>
+      <AppPageHeader
+        title="Jobs"
+        actions={
+          <Button onClick={handleCreate} className="flex items-center gap-2">
+            <Plus size={16} />
+            Add Job
+          </Button>
+        }
+      />
 
       {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Filter Tabs */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex rounded-lg border border-border bg-muted/60 p-1">
           {[
             { key: "all", label: "All" },
             { key: "upcoming", label: "Upcoming" },
@@ -171,8 +211,8 @@ export function JobsClient() {
               key={key}
               onClick={() => setFilter(key as any)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${filter === key
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-card text-primary shadow-sm ring-1 ring-border"
+                  : "text-muted-foreground hover:text-foreground"
                 }`}
             >
               {label}
@@ -182,7 +222,7 @@ export function JobsClient() {
 
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
           <Input
             placeholder="Search jobs..."
             value={search}
@@ -194,8 +234,8 @@ export function JobsClient() {
 
       {/* Jobs Table/List */}
       {sortedJobs.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-600 mb-4">
+        <div className="text-center py-12 bg-muted/40 rounded-lg border border-dashed border-border">
+          <p className="text-muted-foreground mb-4">
             {search || filter !== "all"
               ? "No jobs match your current filters."
               : "No jobs yet. Create your first job to get started."
@@ -210,63 +250,80 @@ export function JobsClient() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="hidden md:block ergon-card overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  {[
-                    { key: "customer", label: "Customer Name" },
-                    { key: "service_type", label: "Service" },
-                    { key: "status", label: "Status" },
-                    { key: "date_scheduled", label: "Date Scheduled" }
-                  ].map(({ key, label }) => (
+                  {(
+                    [
+                      { key: "customer", label: "Customer" },
+                      { key: "address", label: "Address" },
+                      { key: "date_scheduled", label: "Date scheduled" },
+                      { key: "date_created", label: "Date created" },
+                      { key: "status", label: "Status" },
+                    ] as const
+                  ).map(({ key, label }) => (
                     <th
                       key={key}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort(key as any)}
+                      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted/80"
+                      onClick={() => handleSort(key)}
                     >
                       <div className="flex items-center gap-1">
                         {label}
                         {sortBy === key && (
-                          <span className="text-blue-600">
+                          <span className="text-primary">
                             {sortOrder === "asc" ? "↑" : "↓"}
                           </span>
                         )}
                       </div>
                     </th>
                   ))}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Service
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-border">
                 {sortedJobs.map((job) => (
                   <tr
                     key={job.id}
-                    className="hover:bg-gray-50 cursor-pointer"
+                    className="hover:bg-muted/40 cursor-pointer"
                     onClick={() => handleEdit(job)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{job.customer_name}</div>
-                      {job.address && (
-                        <div className="text-sm text-gray-500">{job.address}</div>
-                      )}
+                      <div className="font-medium text-foreground">
+                        {job.customer_name}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                      {job.service_type}
+                    <td className="px-6 py-4 text-sm text-muted-foreground max-w-[200px]">
+                      {job.address?.trim() ? job.address : "—"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      {job.scheduled_start
+                        ? new Date(job.scheduled_start).toLocaleDateString()
+                        : "—"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      {job.created_at
+                        ? new Date(job.created_at).toLocaleDateString()
+                        : "—"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${job.status === "completed" ? "bg-green-100 text-green-800" :
-                          job.status === "scheduled" ? "bg-blue-100 text-blue-800" :
-                            job.status === "paid" ? "bg-purple-100 text-purple-800" :
-                              "bg-yellow-100 text-yellow-800"
-                        }`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${job.status === "completed"
+                          ? "bg-success/15 text-success"
+                          : job.status === "scheduled"
+                            ? "bg-primary/15 text-foreground"
+                            : job.status === "paid"
+                              ? "bg-accent text-accent-foreground"
+                              : "bg-warning/20 text-foreground"
+                          }`}
+                      >
                         {job.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {job.scheduled_start
-                        ? new Date(job.scheduled_start).toLocaleDateString()
-                        : "Not scheduled"
-                      }
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                      {job.service_type}
                     </td>
                   </tr>
                 ))}
@@ -279,28 +336,33 @@ export function JobsClient() {
             {sortedJobs.map((job) => (
               <div
                 key={job.id}
-                className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:bg-gray-50"
+                className="ergon-card p-4 cursor-pointer hover:bg-muted/30 transition-colors"
                 onClick={() => handleEdit(job)}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <div className="font-medium text-gray-900">{job.customer_name}</div>
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${job.status === "completed" ? "bg-green-100 text-green-800" :
-                      job.status === "scheduled" ? "bg-blue-100 text-blue-800" :
-                        job.status === "paid" ? "bg-purple-100 text-purple-800" :
-                          "bg-yellow-100 text-yellow-800"
+                  <div className="font-medium text-foreground">{job.customer_name}</div>
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${job.status === "completed" ? "bg-success/15 text-success" :
+                      job.status === "scheduled" ? "bg-primary/15 text-foreground" :
+                        job.status === "paid" ? "bg-accent text-accent-foreground" :
+                          "bg-warning/20 text-foreground"
                     }`}>
                     {job.status}
                   </span>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground space-y-1">
                   <div>{job.service_type}</div>
-                  {job.address && <div className="text-gray-500">{job.address}</div>}
-                  <div className="text-gray-500">
+                  {job.address?.trim() ? <div>{job.address}</div> : null}
+                  <div>
                     {job.scheduled_start
                       ? `Scheduled: ${new Date(job.scheduled_start).toLocaleDateString()}`
-                      : "Not scheduled"
-                    }
+                      : "Not scheduled"}
                   </div>
+                  {job.created_at ? (
+                    <div>
+                      Created:{" "}
+                      {new Date(job.created_at).toLocaleDateString()}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}

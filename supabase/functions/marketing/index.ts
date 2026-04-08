@@ -56,8 +56,8 @@
  *     company_id from the client.
  * - AI:
  *   - AI is ONLY used here (Marketing module).
- *   - OpenAI is called exclusively from GenerateCopyNode in
- *     lib/marketing/langgraph/graph.ts.
+ *   - OpenAI is called exclusively from stepGenerateCopy in
+ *     lib/marketing/pipeline/steps.ts (wired by LangGraph in graph.ts).
  *   - AI never touches the database directly.
  */
 
@@ -67,6 +67,8 @@ import {
   runMarketingGraph,
   type MarketingChannel,
 } from "../../../lib/marketing/langgraph/graph.ts";
+import { MarketingGenerateBody } from "../_shared/schemas.ts";
+import { enforceActiveSubscription } from "../_shared/subscription.ts";
 
 type SupabaseClient = ReturnType<typeof createClient>;
 
@@ -196,9 +198,12 @@ serve(async (req: Request) => {
 
   // Generate new marketing content
   if (method === "POST") {
-    let body: { channel?: string; context?: string | null };
+    const subCheck = await enforceActiveSubscription(supabase, user.id);
+    if (subCheck) return subCheck;
+
+    let jsonBody: unknown;
     try {
-      body = (await req.json()) as { channel?: string; context?: string | null };
+      jsonBody = await req.json();
     } catch {
       return jsonResponse(
         { error: "Invalid JSON body", code: "VALIDATION_INVALID_JSON" },
@@ -206,30 +211,55 @@ serve(async (req: Request) => {
       );
     }
 
-    const channel = body.channel as MarketingChannel | undefined;
-    const context =
-      typeof body.context === "string" ? body.context : body.context ?? null;
-
-    if (!channel) {
+    const parsed = MarketingGenerateBody.safeParse(jsonBody);
+    if (!parsed.success) {
       return jsonResponse(
-        { error: "Missing channel", code: "VALIDATION_MISSING_CHANNEL" },
+        { error: "Invalid request body", code: "VALIDATION_INVALID_BODY" },
         { status: 400 },
       );
     }
+
+    const { channel, context } = parsed.data;
+
+    console.log(
+      JSON.stringify({
+        event: "marketing_generate_start",
+        userId: user.id,
+        companyId,
+        channel,
+      }),
+    );
 
     try {
       const asset = await runMarketingGraph({
         supabase,
         userId: user.id,
         companyId,
-        channel,
-        context,
+        channel: channel as MarketingChannel,
+        context: context ?? null,
       });
+
+      console.log(
+        JSON.stringify({
+          event: "marketing_generate_ok",
+          userId: user.id,
+          companyId,
+          assetId: asset.id,
+        }),
+      );
 
       return jsonResponse({ asset });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to generate marketing copy.";
+      console.log(
+        JSON.stringify({
+          event: "marketing_generate_fail",
+          userId: user.id,
+          companyId,
+          error: message,
+        }),
+      );
       return jsonResponse(
         { error: message, code: "MARKETING_GENERATE_FAILED" },
         { status: 400 },

@@ -25,10 +25,6 @@ jest.mock("@/hooks/use-profile", () => ({
   }),
 }));
 
-jest.mock("@/app/(app)/dashboard/_components/dashboard-menu", () => ({
-  DashboardMenu: () => <div data-testid="dashboard-menu">Menu</div>,
-}));
-
 jest.mock("@/app/(app)/profile/_components/profile-image-upload", () => ({
   ProfileImageUpload: () => <div data-testid="profile-image-upload">Upload</div>,
 }));
@@ -56,7 +52,6 @@ describe("Profile page", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("user@example.com")).toBeInTheDocument();
     expect(screen.getByTestId("profile-image-upload")).toBeInTheDocument();
-    expect(screen.getByTestId("dashboard-menu")).toBeInTheDocument();
   });
 
   it("renders profile data from useProfile", () => {

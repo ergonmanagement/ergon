@@ -12,7 +12,8 @@ const NAV_ITEMS = [
   { href: "/customers", label: "Customers", icon: "👥" },
   { href: "/marketing", label: "Marketing", icon: "📢" },
   { href: "/finance", label: "Finance", icon: "💰" },
-  { href: "/settings", label: "Settings", icon: "⚙️" },
+  { href: "/profile", label: "Profile", icon: "👤" },
+  { href: "/settings", label: "Account settings", icon: "⚙️" },
 ];
 
 type MobileShellProps = {
@@ -25,47 +26,60 @@ export function MobileShell({ user, children }: MobileShellProps) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      {/* Mobile Header */}
-      <header className="h-16 px-4 flex items-center justify-between border-b border-gray-200 bg-white sticky top-0 z-50">
-        <h1 className="text-lg font-semibold text-gray-900">Ergon</h1>
+    <div className="min-h-screen flex flex-col bg-background">
+      <header className="h-14 px-4 flex items-center justify-between border-b border-border bg-ergon-navy text-ergon-cream sticky top-0 z-50">
+        <span className="text-base font-semibold tracking-tight">Ergon</span>
         <button
           type="button"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="inline-flex items-center justify-center w-10 h-10 rounded-md border border-white/20 bg-white/5 text-ergon-cream hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-ergon-primary"
           aria-label="Toggle menu"
         >
-          <svg 
-            className="w-5 h-5" 
-            fill="none" 
-            stroke="currentColor" 
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
             {isMenuOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             )}
           </svg>
         </button>
       </header>
 
-      {/* Mobile Drawer Overlay */}
       {isMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+        <div
+          className="fixed inset-0 top-14 bg-black/40 z-40"
           onClick={() => setIsMenuOpen(false)}
+          aria-hidden
         />
       )}
 
-      {/* Mobile Drawer */}
-      <nav className={`fixed top-16 left-0 w-64 h-full bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-50 ${
-        isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        <div className="p-4 border-b border-gray-200">
-          <p className="text-sm text-gray-600">{user?.email}</p>
+      <nav
+        className={`fixed top-14 left-0 w-72 max-w-[85vw] h-[calc(100vh-3.5rem)] bg-ergon-navy text-ergon-cream border-r border-white/10 transform transition-transform duration-200 ease-out z-50 ${
+          isMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="p-4 border-b border-white/10">
+          <p className="text-xs text-ergon-cream/60 uppercase tracking-wide">
+            Signed in
+          </p>
+          <p className="text-sm text-ergon-cream/90 truncate mt-1">{user?.email}</p>
         </div>
-        
+
         <ul className="p-2 space-y-1">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -74,13 +88,15 @@ export function MobileShell({ user, children }: MobileShellProps) {
                 <Link
                   href={item.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-blue-50 text-blue-700 border border-blue-200"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-white/12 text-ergon-primary shadow-sm"
+                      : "text-ergon-cream/85 hover:bg-white/5"
                   }`}
                 >
-                  <span className="text-lg">{item.icon}</span>
+                  <span className="text-lg" aria-hidden>
+                    {item.icon}
+                  </span>
                   <span>{item.label}</span>
                 </Link>
               </li>
@@ -89,11 +105,8 @@ export function MobileShell({ user, children }: MobileShellProps) {
         </ul>
       </nav>
 
-      {/* Main Content */}
-      <main className="flex-1 bg-gray-50">
-        <div className="h-full px-4 py-6">
-          {children}
-        </div>
+      <main className="flex-1">
+        <div className="h-full px-4 py-6 max-w-7xl mx-auto w-full">{children}</div>
       </main>
     </div>
   );

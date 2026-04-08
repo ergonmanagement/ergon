@@ -16,17 +16,17 @@ import { cn } from "@/lib/utils"
  */
 const buttonVariants = cva(
     // Base styles applied to all buttons
-    "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-sm",
     {
         variants: {
             // Visual style variants
             variant: {
                 default: "bg-primary text-primary-foreground hover:bg-primary/90", // Primary blue button
                 destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90", // Red danger button
-                outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground", // Outlined button
-                secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80", // Secondary gray button
-                ghost: "hover:bg-accent hover:text-accent-foreground", // Transparent with hover effect
-                link: "text-primary underline-offset-4 hover:underline", // Text link style
+                outline: "border border-input bg-card hover:bg-muted/60 hover:text-foreground shadow-sm", // Outlined button
+                secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm", // Secondary gray button
+                ghost: "shadow-none hover:bg-accent hover:text-accent-foreground", // Transparent with hover effect
+                link: "shadow-none text-primary underline-offset-4 hover:underline", // Text link style
             },
             // Size variants
             size: {

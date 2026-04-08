@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FormField, FormError, FormSubmitButton } from "@/components/form";
+import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useLogin } from "@/hooks/use-login";
 
 export function LoginForm() {
@@ -16,8 +17,8 @@ export function LoginForm() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Login</h1>
+    <div className="flex flex-col gap-6">
+      <AppPageHeader title="Sign in" variant="minimal" />
       <form onSubmit={handleLogin} className="flex flex-col gap-4">
         <FormField
           label="Email"
@@ -38,7 +39,7 @@ export function LoginForm() {
           labelAside={
             <Link
               href="/auth/forgot-password"
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-primary hover:underline underline-offset-2"
             >
               Forgot password?
             </Link>
@@ -51,7 +52,10 @@ export function LoginForm() {
       </form>
       <p className="text-sm text-center">
         Don&apos;t have an account?{" "}
-        <Link href="/auth/sign-up" className="text-blue-600 hover:underline">
+        <Link
+          href="/auth/sign-up"
+          className="text-primary font-medium hover:underline underline-offset-2"
+        >
           Sign up
         </Link>
       </p>

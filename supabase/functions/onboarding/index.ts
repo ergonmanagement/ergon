@@ -1,12 +1,12 @@
 /**
  * Supabase Edge Function: onboarding
  *
- * Request JSON schema:
- * {
- *   "company_name": string,
- *   "service_type": string,
- *   "phone": string
- * }
+ * Request JSON schema (highLevelDesign §4.4, lowLevelDesign §4.1):
+ * Required:
+ *   company_name, service_type, phone
+ * Optional:
+ *   address, employees_count, years_in_business, estimated_revenue, referral_source
+ * Email/password are collected at sign-up; this runs post-auth.
  *
  * Auth requirement:
  * - Supabase JWT required (user must be signed in via Supabase Auth)
@@ -36,12 +36,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.0";
-
-type OnboardingRequest = {
-  company_name: string;
-  service_type: string;
-  phone: string;
-};
+import { OnboardingBody } from "../_shared/schemas.ts";
 
 const corsHeaders: HeadersInit = {
   "Access-Control-Allow-Origin": "*",
@@ -112,9 +107,9 @@ serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
 
-  let body: OnboardingRequest;
+  let json: unknown;
   try {
-    body = (await req.json()) as OnboardingRequest;
+    json = await req.json();
   } catch {
     return jsonResponse(
       { error: "Invalid JSON body", code: "VALIDATION_INVALID_JSON" },
@@ -122,10 +117,18 @@ serve(async (req: Request) => {
     );
   }
 
-  const { company_name, service_type, phone } = body;
-  if (!company_name || !service_type || !phone) {
+  const parsed = OnboardingBody.safeParse(json);
+  if (!parsed.success) {
     return jsonResponse(
-      { error: "Missing required fields", code: "VALIDATION_MISSING_FIELDS" },
+      { error: "Invalid request body", code: "VALIDATION_INVALID_BODY" },
+      { status: 400 },
+    );
+  }
+
+  const b = parsed.data;
+  if (!user.email) {
+    return jsonResponse(
+      { error: "User email is required", code: "AUTH_EMAIL_MISSING" },
       { status: 400 },
     );
   }
@@ -133,9 +136,14 @@ serve(async (req: Request) => {
   const { data, error } = await adminSupabase.rpc("onboarding_create_company_and_owner", {
     p_user_id: user.id,
     p_email: user.email,
-    p_company_name: company_name,
-    p_service_type: service_type,
-    p_phone: phone,
+    p_company_name: b.company_name,
+    p_service_type: b.service_type,
+    p_phone: b.phone,
+    p_address: b.address ?? null,
+    p_employees_count: b.employees_count ?? null,
+    p_years_in_business: b.years_in_business ?? null,
+    p_estimated_revenue: b.estimated_revenue ?? null,
+    p_referral_source: b.referral_source ?? null,
   });
 
   if (error) {

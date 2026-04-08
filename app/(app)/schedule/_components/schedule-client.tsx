@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useSchedule } from "@/hooks/use-schedule";
 import { useJobs } from "@/hooks/use-jobs";
 import { Button } from "@/components/ui/button";
@@ -245,12 +246,12 @@ export function ScheduleClient() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
-          <div className="flex items-center space-x-2">
+      <AppPageHeader
+        title="Schedule"
+        toolbar={
+          <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => {
                 const newDate = new Date(currentDate);
                 if (view === "month") {
@@ -260,17 +261,18 @@ export function ScheduleClient() {
                 }
                 setCurrentDate(newDate);
               }}
-              className="p-1 hover:bg-gray-100 rounded"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+              aria-label="Previous period"
             >
               ←
             </button>
-            <h2 className="text-lg font-medium text-gray-700">
+            <p className="text-base font-medium text-foreground tabular-nums min-w-[10rem] text-center sm:min-w-[14rem]">
               {view === "month"
                 ? `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
-                : `Week of ${currentDate.toLocaleDateString()}`
-              }
-            </h2>
+                : `Week of ${currentDate.toLocaleDateString()}`}
+            </p>
             <button
+              type="button"
               onClick={() => {
                 const newDate = new Date(currentDate);
                 if (view === "month") {
@@ -280,93 +282,97 @@ export function ScheduleClient() {
                 }
                 setCurrentDate(newDate);
               }}
-              className="p-1 hover:bg-gray-100 rounded"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+              aria-label="Next period"
             >
               →
             </button>
           </div>
-        </div>
+        }
+        actions={
+          <>
+            <div className="relative">
+              <Button
+                onClick={() => setShowCreateDropdown(!showCreateDropdown)}
+                className="flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Add new
+                <ChevronDown size={14} />
+              </Button>
 
-        <div className="flex items-center space-x-3">
-          {/* Create dropdown */}
-          <div className="relative">
-            <Button
-              onClick={() => setShowCreateDropdown(!showCreateDropdown)}
-              className="flex items-center gap-2"
-            >
-              <Plus size={16} />
-              Add New
-              <ChevronDown size={14} />
-            </Button>
-
-            {showCreateDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                <div className="py-1">
+              {showCreateDropdown && (
+                <div className="absolute right-0 mt-2 w-52 rounded-lg border border-border bg-card py-1 shadow-md z-50">
                   <button
+                    type="button"
                     onClick={() => {
                       setShowEventDialog(true);
                       setShowCreateDropdown(false);
                       resetEventForm();
                     }}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted/50"
                   >
                     📅 Event
                   </button>
                   <button
+                    type="button"
                     onClick={() => {
                       setShowTaskDialog(true);
                       setShowCreateDropdown(false);
                       resetTaskForm();
                     }}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted/50"
                   >
                     ✓ Task
                   </button>
                   <button
+                    type="button"
                     onClick={() => {
                       setShowJobDialog(true);
                       setShowCreateDropdown(false);
                       resetJobForm();
                     }}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-muted/50"
                   >
                     🔧 Job
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* View toggle */}
-          <div className="inline-flex rounded-md border border-gray-300 text-xs overflow-hidden bg-white">
-            <button
-              type="button"
-              onClick={() => setView("week")}
-              className={`px-3 py-1 ${view === "week" ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-50"}`}
-            >
-              Week
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("month")}
-              className={`px-3 py-1 ${view === "month" ? "bg-blue-500 text-white" : "text-gray-700 hover:bg-gray-50"}`}
-            >
-              Month
-            </button>
-          </div>
-        </div>
-      </div>
+            <div className="inline-flex overflow-hidden rounded-md border border-border bg-card text-xs shadow-sm">
+              <button
+                type="button"
+                onClick={() => setView("week")}
+                className={`px-3 py-2 font-medium transition-colors ${view === "week" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/50"}`}
+              >
+                Week
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("month")}
+                className={`px-3 py-2 font-medium transition-colors ${view === "month" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/50"}`}
+              >
+                Month
+              </button>
+            </div>
+          </>
+        }
+      />
 
       {/* Loading State */}
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <div className="text-gray-600">Loading schedule...</div>
+          <div className="text-muted-foreground text-sm">Loading schedule…</div>
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200" role="alert">
+        <div
+          className="text-sm text-destructive bg-destructive/5 p-3 rounded-lg border border-destructive/20"
+          role="alert"
+        >
           {error}
         </div>
       )}
@@ -376,11 +382,11 @@ export function ScheduleClient() {
         <>
           {view === "month" ? (
             /* Calendar Grid View */
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
               {/* Days of the week header */}
-              <div className="grid grid-cols-7 border-b border-gray-200">
+              <div className="grid grid-cols-7 border-b border-border">
                 {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                  <div key={day} className="bg-gray-50 px-3 py-2 text-center text-sm font-medium text-gray-700">
+                  <div key={day} className="bg-muted/50 px-3 py-2 text-center text-sm font-medium text-foreground">
                     {day}
                   </div>
                 ))}
@@ -395,14 +401,14 @@ export function ScheduleClient() {
                   return (
                     <div
                       key={index}
-                      className={`min-h-[120px] border-r border-b border-gray-200 p-2 ${!day.isCurrentMonth ? "bg-gray-50" : "bg-white"
-                        } ${isToday ? "bg-blue-50" : ""}`}
+                      className={`min-h-[120px] border-r border-b border-border p-2 ${!day.isCurrentMonth ? "bg-muted/50" : "bg-card"
+                        } ${isToday ? "bg-primary/10" : ""}`}
                     >
                       {day.date && (
                         <>
                           <div className={`text-sm mb-1 ${isToday
-                            ? "bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold"
-                            : "text-gray-900"
+                            ? "bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center font-bold"
+                            : "text-foreground"
                             }`}>
                             {day.date.getDate()}
                           </div>
@@ -410,14 +416,14 @@ export function ScheduleClient() {
                             {dayEvents.slice(0, 3).map((event, eventIndex) => (
                               <div
                                 key={eventIndex}
-                                className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded truncate"
+                                className="text-xs bg-primary/15 text-foreground px-2 py-1 rounded truncate"
                                 title={event.title}
                               >
                                 {event.title}
                               </div>
                             ))}
                             {dayEvents.length > 3 && (
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-muted-foreground">
                                 +{dayEvents.length - 3} more
                               </div>
                             )}
@@ -431,11 +437,11 @@ export function ScheduleClient() {
             </div>
           ) : (
             /* Week Grid View */
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
               {/* Days of the week header */}
-              <div className="grid grid-cols-7 border-b border-gray-200">
+              <div className="grid grid-cols-7 border-b border-border">
                 {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => (
-                  <div key={day} className="bg-gray-50 px-3 py-2 text-center text-sm font-medium text-gray-700">
+                  <div key={day} className="bg-muted/50 px-3 py-2 text-center text-sm font-medium text-foreground">
                     {day}
                   </div>
                 ))}
@@ -462,12 +468,12 @@ export function ScheduleClient() {
                     return (
                       <div
                         key={index}
-                        className={`min-h-[200px] border-r border-b border-gray-200 p-3 ${isToday ? "bg-blue-50" : "bg-white"
+                        className={`min-h-[200px] border-r border-b border-border p-3 ${isToday ? "bg-primary/10" : "bg-card"
                           }`}
                       >
                         <div className={`text-lg mb-3 font-medium ${isToday
-                          ? "bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center"
-                          : "text-gray-900"
+                          ? "bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center"
+                          : "text-foreground"
                           }`}>
                           {date.getDate()}
                         </div>
@@ -475,11 +481,11 @@ export function ScheduleClient() {
                           {dayEvents.map((event, eventIndex) => (
                             <div
                               key={eventIndex}
-                              className="text-xs bg-blue-100 text-blue-800 px-2 py-2 rounded border-l-2 border-blue-400"
+                              className="text-xs bg-primary/15 text-foreground px-2 py-2 rounded border-l-2 border-primary"
                               title={`${event.title} - ${new Date(event.start_at).toLocaleTimeString()}`}
                             >
                               <div className="font-medium truncate">{event.title}</div>
-                              <div className="text-blue-600 mt-1">
+                              <div className="text-primary mt-1">
                                 {new Date(event.start_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
                             </div>
@@ -492,7 +498,7 @@ export function ScheduleClient() {
               </div>
 
               {events.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted-foreground">
                   No events scheduled this week.
                 </div>
               )}
