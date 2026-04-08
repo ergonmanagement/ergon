@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useSchedule } from "@/hooks/use-schedule";
 import { useJobs } from "@/hooks/use-jobs";
@@ -72,6 +72,45 @@ function getEventsForDate(events: any[], targetDate: Date) {
   });
 }
 
+type DateTimeFieldProps = {
+  id: string;
+  label: string;
+  value: string;
+  onApply: (next: string) => void;
+  required?: boolean;
+};
+
+function DateTimeField({ id, label, value, onApply, required }: DateTimeFieldProps) {
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  function applyDraft() {
+    if (draft !== value) onApply(draft);
+  }
+
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <div className="mt-1 flex items-center gap-2">
+        <Input
+          id={id}
+          type="datetime-local"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={applyDraft}
+          required={required}
+        />
+        <Button type="button" variant="outline" onClick={applyDraft}>
+          Apply
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function ScheduleClient() {
   const [view, setView] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -79,6 +118,8 @@ export function ScheduleClient() {
   const [showEventDialog, setShowEventDialog] = useState(false);
   const [showTaskDialog, setShowTaskDialog] = useState(false);
   const [showJobDialog, setShowJobDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
   // Form state for different types
   const [eventFormData, setEventFormData] = useState({
@@ -227,6 +268,31 @@ export function ScheduleClient() {
       resetJobForm();
     } catch (err) {
       console.error("Error creating job:", err);
+    }
+  };
+
+  const handleOpenEdit = (event: any) => {
+    setSelectedEvent(event);
+    setShowEditDialog(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEvent) return;
+    try {
+      await upsertEvent({
+        id: selectedEvent.id,
+        type: selectedEvent.type,
+        title: selectedEvent.title,
+        start_at: selectedEvent.start_at,
+        end_at: selectedEvent.end_at,
+        location: selectedEvent.location,
+        notes: selectedEvent.notes,
+      });
+      setShowEditDialog(false);
+      setSelectedEvent(null);
+    } catch (err) {
+      console.error("Error updating schedule item:", err);
     }
   };
 
@@ -414,13 +480,15 @@ export function ScheduleClient() {
                           </div>
                           <div className="space-y-1">
                             {dayEvents.slice(0, 3).map((event, eventIndex) => (
-                              <div
+                              <button
+                                type="button"
                                 key={eventIndex}
-                                className="text-xs bg-primary/15 text-foreground px-2 py-1 rounded truncate"
+                                onClick={() => handleOpenEdit(event)}
+                                className="block w-full text-left text-xs bg-primary/15 text-foreground px-2 py-1 rounded truncate hover:bg-primary/25"
                                 title={event.title}
                               >
                                 {event.title}
-                              </div>
+                              </button>
                             ))}
                             {dayEvents.length > 3 && (
                               <div className="text-xs text-muted-foreground">
@@ -479,16 +547,18 @@ export function ScheduleClient() {
                         </div>
                         <div className="space-y-2">
                           {dayEvents.map((event, eventIndex) => (
-                            <div
+                            <button
+                              type="button"
                               key={eventIndex}
-                              className="text-xs bg-primary/15 text-foreground px-2 py-2 rounded border-l-2 border-primary"
+                              onClick={() => handleOpenEdit(event)}
+                              className="block w-full text-left text-xs bg-primary/15 text-foreground px-2 py-2 rounded border-l-2 border-primary hover:bg-primary/25"
                               title={`${event.title} - ${new Date(event.start_at).toLocaleTimeString()}`}
                             >
                               <div className="font-medium truncate">{event.title}</div>
                               <div className="text-primary mt-1">
                                 {new Date(event.start_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -527,22 +597,20 @@ export function ScheduleClient() {
               />
             </div>
             <div>
-              <Label htmlFor="event-start">Start Date & Time *</Label>
-              <Input
+              <DateTimeField
                 id="event-start"
-                type="datetime-local"
+                label="Start Date & Time *"
                 value={eventFormData.start_at}
-                onChange={(e) => setEventFormData({ ...eventFormData, start_at: e.target.value })}
+                onApply={(next) => setEventFormData({ ...eventFormData, start_at: next })}
                 required
               />
             </div>
             <div>
-              <Label htmlFor="event-end">End Date & Time *</Label>
-              <Input
+              <DateTimeField
                 id="event-end"
-                type="datetime-local"
+                label="End Date & Time *"
                 value={eventFormData.end_at}
-                onChange={(e) => setEventFormData({ ...eventFormData, end_at: e.target.value })}
+                onApply={(next) => setEventFormData({ ...eventFormData, end_at: next })}
                 required
               />
             </div>
@@ -597,22 +665,20 @@ export function ScheduleClient() {
               />
             </div>
             <div>
-              <Label htmlFor="task-start">Start Date & Time *</Label>
-              <Input
+              <DateTimeField
                 id="task-start"
-                type="datetime-local"
+                label="Start Date & Time *"
                 value={taskFormData.start_at}
-                onChange={(e) => setTaskFormData({ ...taskFormData, start_at: e.target.value })}
+                onApply={(next) => setTaskFormData({ ...taskFormData, start_at: next })}
                 required
               />
             </div>
             <div>
-              <Label htmlFor="task-end">End Date & Time *</Label>
-              <Input
+              <DateTimeField
                 id="task-end"
-                type="datetime-local"
+                label="End Date & Time *"
                 value={taskFormData.end_at}
-                onChange={(e) => setTaskFormData({ ...taskFormData, end_at: e.target.value })}
+                onApply={(next) => setTaskFormData({ ...taskFormData, end_at: next })}
                 required
               />
             </div>
@@ -677,22 +743,20 @@ export function ScheduleClient() {
               />
             </div>
             <div>
-              <Label htmlFor="job-start">Start Date & Time *</Label>
-              <Input
+              <DateTimeField
                 id="job-start"
-                type="datetime-local"
+                label="Start Date & Time *"
                 value={jobFormData.scheduled_start}
-                onChange={(e) => setJobFormData({ ...jobFormData, scheduled_start: e.target.value })}
+                onApply={(next) => setJobFormData({ ...jobFormData, scheduled_start: next })}
                 required
               />
             </div>
             <div>
-              <Label htmlFor="job-end">End Date & Time *</Label>
-              <Input
+              <DateTimeField
                 id="job-end"
-                type="datetime-local"
+                label="End Date & Time *"
                 value={jobFormData.scheduled_end}
-                onChange={(e) => setJobFormData({ ...jobFormData, scheduled_end: e.target.value })}
+                onApply={(next) => setJobFormData({ ...jobFormData, scheduled_end: next })}
                 required
               />
             </div>
@@ -734,6 +798,95 @@ export function ScheduleClient() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Existing Calendar Item Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit schedule item</DialogTitle>
+            <DialogDescription>
+              Update title, time, and details to edit or move this item.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEvent ? (
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="edit-event-title">Title *</Label>
+                <Input
+                  id="edit-event-title"
+                  value={selectedEvent.title}
+                  onChange={(e) =>
+                    setSelectedEvent({ ...selectedEvent, title: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <DateTimeField
+                id="edit-event-start"
+                label="Start Date & Time *"
+                value={selectedEvent.start_at}
+                onApply={(next) =>
+                  setSelectedEvent({ ...selectedEvent, start_at: next })
+                }
+                required
+              />
+              <DateTimeField
+                id="edit-event-end"
+                label="End Date & Time *"
+                value={selectedEvent.end_at}
+                onApply={(next) =>
+                  setSelectedEvent({ ...selectedEvent, end_at: next })
+                }
+                required
+              />
+              {selectedEvent.type === "event" ? (
+                <div>
+                  <Label htmlFor="edit-event-location">Location</Label>
+                  <Input
+                    id="edit-event-location"
+                    value={selectedEvent.location ?? ""}
+                    onChange={(e) =>
+                      setSelectedEvent({
+                        ...selectedEvent,
+                        location: e.target.value || null,
+                      })
+                    }
+                  />
+                </div>
+              ) : null}
+              <div>
+                <Label htmlFor="edit-event-notes">Notes</Label>
+                <Textarea
+                  id="edit-event-notes"
+                  value={selectedEvent.notes ?? ""}
+                  onChange={(e) =>
+                    setSelectedEvent({
+                      ...selectedEvent,
+                      notes: e.target.value || null,
+                    })
+                  }
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button type="submit" className="flex-1">
+                  Save changes
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditDialog(false);
+                    setSelectedEvent(null);
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

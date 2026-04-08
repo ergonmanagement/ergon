@@ -68,6 +68,12 @@ function compareJobs(
   return sortOrder === "asc" ? cmp : -cmp;
 }
 
+function getStartOfTodayTimestamp(): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today.getTime();
+}
+
 export function JobsClient() {
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
   const [search, setSearch] = useState("");
@@ -91,14 +97,18 @@ export function JobsClient() {
 
   const { jobs, loading, error, upsertJob } = useJobs();
 
+  const startOfToday = getStartOfTodayTimestamp();
   const tabFilteredJobs = jobs.filter((job) => {
+    if (filter === "all") return true;
+    if (!job.scheduled_start) return false;
+
+    const scheduledAt = new Date(job.scheduled_start).getTime();
+    if (!Number.isFinite(scheduledAt)) return false;
+
     if (filter === "upcoming") {
-      return job.status === "lead" || job.status === "scheduled";
+      return scheduledAt >= startOfToday;
     }
-    if (filter === "past") {
-      return job.status === "completed" || job.status === "paid";
-    }
-    return true;
+    return scheduledAt < startOfToday;
   });
 
   const filteredJobs = tabFilteredJobs.filter(job =>
