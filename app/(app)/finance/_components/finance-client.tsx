@@ -234,8 +234,8 @@ export function FinanceClient() {
               key={key}
               onClick={() => setTimeFilter(key as TimeFilter)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${timeFilter === key
-                  ? "bg-card text-primary shadow-sm ring-1 ring-border"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background"
                 }`}
             >
               {label}
@@ -254,8 +254,8 @@ export function FinanceClient() {
               key={key}
               onClick={() => setTypeFilter(key as any)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${typeFilter === key
-                  ? "bg-card text-primary shadow-sm ring-1 ring-border"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background"
                 }`}
             >
               {label}

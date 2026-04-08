@@ -89,11 +89,19 @@ export function JobsClient() {
     notes: ""
   });
 
-  const { jobs, loading, error, upsertJob } = useJobs({
-    status: filter === "all" ? undefined : (filter === "upcoming" ? "scheduled" : "completed"),
+  const { jobs, loading, error, upsertJob } = useJobs();
+
+  const tabFilteredJobs = jobs.filter((job) => {
+    if (filter === "upcoming") {
+      return job.status === "lead" || job.status === "scheduled";
+    }
+    if (filter === "past") {
+      return job.status === "completed" || job.status === "paid";
+    }
+    return true;
   });
 
-  const filteredJobs = jobs.filter(job =>
+  const filteredJobs = tabFilteredJobs.filter(job =>
     job.customer_name.toLowerCase().includes(search.toLowerCase()) ||
     job.service_type.toLowerCase().includes(search.toLowerCase()) ||
     job.address?.toLowerCase().includes(search.toLowerCase())
@@ -211,8 +219,8 @@ export function JobsClient() {
               key={key}
               onClick={() => setFilter(key as any)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${filter === key
-                  ? "bg-card text-primary shadow-sm ring-1 ring-border"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background"
                 }`}
             >
               {label}
