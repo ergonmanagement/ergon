@@ -58,6 +58,29 @@ export function useFinanceEntries(initialFilter: FinanceFilter) {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FinanceFilter>(initialFilter);
 
+  // Keep internal filter in sync with incoming props.
+  const incomingFrom = initialFilter.from;
+  const incomingTo = initialFilter.to;
+  const incomingType = initialFilter.type;
+  useEffect(() => {
+    setFilter((prev) => {
+      const next = {
+        ...prev,
+        from: incomingFrom,
+        to: incomingTo,
+        type: incomingType,
+      };
+      if (
+        prev.from === next.from &&
+        prev.to === next.to &&
+        prev.type === next.type
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [incomingFrom, incomingTo, incomingType]);
+
   /**
    * Effect to load finance entries whenever filter parameters change
    * Uses cleanup function to prevent state updates on unmounted components

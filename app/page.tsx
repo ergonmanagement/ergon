@@ -77,7 +77,7 @@ export async function HomeContent() {
           </p>
         </div>
 
-        <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
           {[
             {
               icon: "📅",
@@ -98,6 +98,11 @@ export async function HomeContent() {
               icon: "💰",
               title: "Finance",
               desc: "Revenue and expense totals you can trust",
+            },
+            {
+              icon: "📢",
+              title: "Marketing",
+              desc: "Generate copy fast and keep campaign history",
             },
           ].map((item) => (
             <div key={item.title} className="ergon-card p-6">

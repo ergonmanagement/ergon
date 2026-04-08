@@ -1,7 +1,31 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { BillingCTA } from "./_components/billing-cta";
+import { createClient } from "@/lib/supabase/server";
 
-export default function PricingPage() {
+export async function PricingContent() {
+  const supabase = await createClient();
+  let isAuthenticated = false;
+  let hasCompletedOnboarding = false;
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    isAuthenticated = Boolean(user);
+
+    if (user) {
+      const { data: userRow, error: userRowError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+      hasCompletedOnboarding = !userRowError && Boolean(userRow?.id);
+    }
+  } catch {
+    isAuthenticated = false;
+    hasCompletedOnboarding = false;
+  }
+
   return (
     <div className="w-full max-w-lg space-y-8">
       <div className="text-center space-y-2">
@@ -57,7 +81,22 @@ export default function PricingPage() {
             <span>Multi-tenant, secure architecture</span>
           </li>
         </ul>
-        <BillingCTA />
+        <div className="space-y-3">
+          {!isAuthenticated ? (
+            <Link
+              href="/auth/sign-up"
+              className="w-full inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-semibold py-2.5 hover:bg-primary/90 transition-colors"
+            >
+              Start subscription
+            </Link>
+          ) : !hasCompletedOnboarding ? (
+            <p className="text-[11px] text-muted-foreground text-center">
+              Complete onboarding before starting your subscription.
+            </p>
+          ) : (
+            <BillingCTA />
+          )}
+        </div>
       </section>
 
       <p className="text-xs text-center text-ergon-cream/60">
@@ -71,6 +110,20 @@ export default function PricingPage() {
         .
       </p>
     </div>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="w-full max-w-lg rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground">
+          Loading pricing...
+        </div>
+      }
+    >
+      <PricingContent />
+    </Suspense>
   );
 }
 

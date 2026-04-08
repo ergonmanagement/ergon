@@ -4,10 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useSubscription } from "@/hooks/use-subscription";
-import { BillingCTA } from "@/app/(public)/pricing/_components/billing-cta";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SERVICE_TYPE_OPTIONS } from "@/app/(public)/auth/onboarding/_constants";
 
 export function SettingsClient() {
   const { company, loading, error, updateCompanyProfile } = useSubscription();
@@ -31,6 +38,12 @@ export function SettingsClient() {
     e.preventDefault();
     setSaveError(null);
     setSaving(true);
+    if (!serviceType.trim()) {
+      setSaveError("Please select a service type.");
+      setSaving(false);
+      return;
+    }
+
     const { error: upErr } = await updateCompanyProfile({
       name,
       service_type: serviceType,
@@ -80,15 +93,33 @@ export function SettingsClient() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company-service">Service type</Label>
-                <Input
-                  id="company-service"
-                  value={serviceType}
-                  onChange={(e) => {
-                    setServiceType(e.target.value);
+                <Select
+                  value={serviceType || undefined}
+                  onValueChange={(value) => {
+                    setServiceType(value);
                     setSavedAt(null);
                   }}
-                  required
-                />
+                >
+                  <SelectTrigger id="company-service">
+                    <SelectValue placeholder="Select your primary service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {!SERVICE_TYPE_OPTIONS.some(
+                      (opt) =>
+                        opt.value !== "__other__" && opt.value === serviceType,
+                    ) &&
+                      serviceType && (
+                        <SelectItem value={serviceType}>{serviceType}</SelectItem>
+                      )}
+                    {SERVICE_TYPE_OPTIONS.map((opt) => (
+                      opt.value === "__other__" ? null : (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                      )
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company-phone">Phone</Label>
@@ -152,10 +183,15 @@ export function SettingsClient() {
           </div>
         </div>
         <div className="ergon-card p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-foreground">Billing</h2>
-          <BillingCTA />
+          <h2 className="text-sm font-semibold text-foreground">Pricing</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Manage subscription and billing from the pricing page.
+          </p>
+          <Button asChild>
+            <Link href="/pricing">Go to pricing</Link>
+          </Button>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Billing is handled securely by Stripe. You can cancel any time.
+            Billing is handled securely by Stripe on the pricing page.
           </p>
         </div>
       </section>

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AuthButton } from "@/components/auth-button";
 import { ProfileProvider } from "@/contexts/profile-context";
+import { PublicPricingLink } from "./_components/public-pricing-link";
+import { PublicHeaderCta } from "./_components/public-header-cta";
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
@@ -22,12 +24,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               </span>
             </div>
             <div className="flex items-center gap-5">
-              <Link
-                href="/pricing"
-                className="text-sm text-ergon-cream/80 hover:text-ergon-primary transition-colors"
-              >
-                Pricing
-              </Link>
+              <PublicPricingLink />
+              <PublicHeaderCta />
               <Suspense>
                 <AuthButton />
               </Suspense>

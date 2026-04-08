@@ -54,6 +54,44 @@ export function useJobs(initialFilter?: JobsFilter) {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<JobsFilter>(initialFilter ?? {});
 
+  // Keep internal filter in sync with incoming props.
+  const hasInitialFilter = initialFilter !== undefined;
+  const incomingStatus = initialFilter?.status;
+  const incomingFrom = initialFilter?.from;
+  const incomingTo = initialFilter?.to;
+  const incomingPage = initialFilter?.page;
+  const incomingPageSize = initialFilter?.pageSize;
+  useEffect(() => {
+    if (!hasInitialFilter) return;
+    setFilter((prev) => {
+      const next = {
+        ...prev,
+        status: incomingStatus,
+        from: incomingFrom,
+        to: incomingTo,
+        page: incomingPage,
+        pageSize: incomingPageSize,
+      };
+      if (
+        prev.status === next.status &&
+        prev.from === next.from &&
+        prev.to === next.to &&
+        prev.page === next.page &&
+        prev.pageSize === next.pageSize
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [
+    hasInitialFilter,
+    incomingStatus,
+    incomingFrom,
+    incomingTo,
+    incomingPage,
+    incomingPageSize,
+  ]);
+
   /**
    * Effect to load jobs whenever filter parameters change
    * Uses cleanup function to prevent state updates on unmounted components
@@ -62,7 +100,6 @@ export function useJobs(initialFilter?: JobsFilter) {
     let isMounted = true; // Flag to prevent state updates after unmount
 
     async function load() {
-      console.log('useJobs: Starting to load jobs with filter:', filter);
       setLoading(true);
       setError(null);
 
@@ -87,8 +124,6 @@ export function useJobs(initialFilter?: JobsFilter) {
               : {}),
           } as Record<string, string>,
         });
-
-        console.log('useJobs: Edge function response:', { data, error });
 
         // Prevent state updates if component was unmounted during request
         if (!isMounted) return;
