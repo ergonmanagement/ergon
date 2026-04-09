@@ -146,10 +146,6 @@ export function CustomersClient() {
     }
   };
 
-  if (loading) {
-    return <div className="text-sm text-muted-foreground">Loading customers...</div>;
-  }
-
   if (error) {
     return (
       <div className="text-sm text-destructive bg-destructive/5 border border-destructive/20 p-3 rounded-lg" role="alert">
@@ -203,6 +199,10 @@ export function CustomersClient() {
           />
         </div>
       </div>
+
+      {loading && (
+        <div className="text-sm text-muted-foreground">Loading customers...</div>
+      )}
 
       {/* Customers Table/List */}
       {sortedCustomers.length === 0 ? (

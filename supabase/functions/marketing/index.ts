@@ -63,12 +63,10 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.0";
-import {
-  runMarketingGraph,
-  type MarketingChannel,
-} from "../../../lib/marketing/langgraph/graph.ts";
 import { MarketingGenerateBody } from "../_shared/schemas.ts";
 import { enforceActiveSubscription } from "../_shared/subscription.ts";
+
+type MarketingChannel = "social_post" | "email" | "sms" | "flyer";
 
 type SupabaseClient = ReturnType<typeof createClient>;
 
@@ -231,6 +229,9 @@ serve(async (req: Request) => {
     );
 
     try {
+      // Lazy-load the graph only for POST generation to keep OPTIONS healthy.
+      const { runMarketingGraph } = await import("./graph.ts");
+
       const asset = await runMarketingGraph({
         supabase,
         userId: user.id,
