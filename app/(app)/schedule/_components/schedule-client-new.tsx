@@ -5,35 +5,12 @@ import { useSchedule } from "@/hooks/use-schedule";
 import { useJobs } from "@/hooks/use-jobs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, ChevronDown } from "lucide-react";
 
 type ViewMode = "week" | "month";
-
-function getCurrentWeekRange() {
-    const now = new Date();
-    const day = now.getUTCDay(); // 0 = Sunday
-    const diffToMonday = (day + 6) % 7;
-    const monday = new Date(now);
-    monday.setUTCDate(now.getUTCDate() - diffToMonday);
-    monday.setUTCHours(0, 0, 0, 0);
-
-    const sunday = new Date(monday);
-    sunday.setUTCDate(monday.getUTCDate() + 6);
-    sunday.setUTCHours(23, 59, 59, 999);
-
-    return { from: monday.toISOString(), to: sunday.toISOString() };
-}
-
-function getCurrentMonthRange() {
-    const now = new Date();
-    const first = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
-    const last = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
-    return { from: first.toISOString(), to: last.toISOString() };
-}
 
 // Generate calendar grid for the month
 function generateCalendarDays(year: number, month: number) {
@@ -178,6 +155,9 @@ export function ScheduleClient() {
                 end_at: eventFormData.end_at,
                 location: eventFormData.location,
                 notes: eventFormData.notes,
+                category: null,
+                color_key: null,
+                customer_id: null,
             });
             setShowEventDialog(false);
             resetEventForm();
@@ -196,6 +176,9 @@ export function ScheduleClient() {
                 end_at: taskFormData.end_at,
                 location: null,
                 notes: taskFormData.notes,
+                category: null,
+                color_key: null,
+                customer_id: null,
             });
             setShowTaskDialog(false);
             resetTaskForm();

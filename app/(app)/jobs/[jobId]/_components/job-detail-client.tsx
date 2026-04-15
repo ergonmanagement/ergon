@@ -6,6 +6,7 @@ import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useJobDetail } from "@/hooks/use-job-detail";
 import { useJobPhotoUpload } from "@/hooks/use-job-photos-upload";
 import { Button } from "@/components/ui/button";
+import { JobLocationMap } from "./job-location-map";
 
 type Props = {
   jobId: string;
@@ -166,6 +167,14 @@ export function JobDetailClient({ jobId }: Props) {
           </div>
         )}
       </section>
+
+      {job.address?.trim() &&
+        process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN && (
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-foreground">Location Map</h2>
+            <JobLocationMap address={job.address.trim()} />
+          </section>
+        )}
     </div>
   );
 }

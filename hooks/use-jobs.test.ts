@@ -60,5 +60,63 @@ describe("useJobs", () => {
 
     expect(result.current.error).toBe("Failed");
   });
+
+  it("refetches the list after upsert so loading does not stay true", async () => {
+    const emptyList = { data: { items: [], total: 0 }, error: null };
+    const saved = { data: { id: "j1" }, error: null };
+    const withJob = {
+      data: {
+        items: [
+          {
+            id: "j1",
+            customer_id: null,
+            customer_name: "Bob",
+            service_type: "Wash",
+            status: "lead",
+            scheduled_start: null,
+            scheduled_end: null,
+            address: null,
+            price: null,
+            notes: null,
+            source: null,
+          },
+        ],
+        total: 1,
+      },
+      error: null,
+    };
+
+    mockInvoke
+      .mockResolvedValueOnce(emptyList)
+      .mockResolvedValueOnce(saved)
+      .mockResolvedValueOnce(withJob);
+
+    const { result } = renderHook(() => useJobs());
+
+    await act(async () => {});
+
+    expect(result.current.jobs).toHaveLength(0);
+    expect(result.current.loading).toBe(false);
+
+    await act(async () => {
+      await result.current.upsertJob({
+        customer_name: "Bob",
+        service_type: "Wash",
+        status: "lead",
+        scheduled_start: null,
+        scheduled_end: null,
+        address: null,
+        price: null,
+        notes: null,
+        customer_id: null,
+        source: null,
+      });
+    });
+
+    expect(mockInvoke).toHaveBeenCalledTimes(3);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.jobs).toHaveLength(1);
+    expect(result.current.jobs[0].customer_name).toBe("Bob");
+  });
 });
 

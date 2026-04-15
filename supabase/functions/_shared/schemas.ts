@@ -42,6 +42,15 @@ export type JobUpsertBodyType = z.infer<typeof JobUpsertBody>;
 
 // --- Schedule (calendar_events) ---
 
+const scheduleColorKey = z.enum([
+  "sky",
+  "emerald",
+  "amber",
+  "rose",
+  "violet",
+  "slate",
+]);
+
 export const ScheduleUpsertBody = z.object({
   id: z.string().uuid().optional(),
   type: z.enum(["event", "task"]),
@@ -50,6 +59,9 @@ export const ScheduleUpsertBody = z.object({
   end_at: z.string().min(1),
   location: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  category: z.string().max(200).nullable().optional(),
+  color_key: z.union([scheduleColorKey, z.null()]).optional(),
+  customer_id: z.string().uuid().nullable().optional(),
 });
 
 export type ScheduleUpsertBodyType = z.infer<typeof ScheduleUpsertBody>;

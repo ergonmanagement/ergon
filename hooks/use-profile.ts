@@ -8,6 +8,6 @@ import {
 export type { Profile };
 
 export function useProfile() {
-  const { profile, loading, error } = useProfileContext();
-  return { profile, loading, error };
+  const { profile, loading, error, saveProfileNames } = useProfileContext();
+  return { profile, loading, error, saveProfileNames };
 }

@@ -22,6 +22,10 @@ type ProfileContextValue = {
   loading: boolean;
   error: string | null;
   updateProfile: (partial: Partial<Profile>) => void;
+  saveProfileNames: (input: {
+    first_name: string;
+    last_name: string;
+  }) => Promise<{ error: string | null }>;
 };
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
@@ -35,6 +39,33 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = useCallback((partial: Partial<Profile>) => {
     setProfile((prev) => (prev ? { ...prev, ...partial } : null));
   }, []);
+
+  const saveProfileNames = useCallback(
+    async ({
+      first_name,
+      last_name,
+    }: {
+      first_name: string;
+      last_name: string;
+    }): Promise<{ error: string | null }> => {
+      if (!user?.id) {
+        return { error: "Not signed in." };
+      }
+      const supabase = createClient();
+      const fn = first_name.trim() || null;
+      const ln = last_name.trim() || null;
+      const { error: upErr } = await supabase
+        .from("profiles")
+        .update({ first_name: fn, last_name: ln })
+        .eq("user_id", user.id);
+      if (upErr) {
+        return { error: upErr.message };
+      }
+      updateProfile({ first_name: fn, last_name: ln });
+      return { error: null };
+    },
+    [user?.id, updateProfile],
+  );
 
   useEffect(() => {
     if (!user?.id) {
@@ -63,6 +94,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     loading,
     error,
     updateProfile,
+    saveProfileNames,
   };
 
   return (

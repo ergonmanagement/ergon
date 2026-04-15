@@ -128,7 +128,7 @@ export function useMarketing(initialFilter?: MarketingFilter) {
   async function generateAsset(params: {
     channel: MarketingChannel;
     context: string;
-  }): Promise<void> {
+  }): Promise<boolean> {
     setGenerating(true);
     setError(null);
 
@@ -155,16 +155,18 @@ export function useMarketing(initialFilter?: MarketingFilter) {
           "Failed to generate marketing content.";
         setError(message);
         setGenerating(false);
-        return;
+        return false;
       }
 
       setGenerating(false);
       setFilter((f) => ({ ...f, page: 1 }));
       setReloadToken((t) => t + 1);
+      return true;
     } catch (err) {
       console.error(err);
       setError("Unexpected error while generating marketing content.");
       setGenerating(false);
+      return false;
     }
   }
 

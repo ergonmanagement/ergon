@@ -53,6 +53,8 @@ export function useJobs(initialFilter?: JobsFilter) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<JobsFilter>(initialFilter ?? {});
+  /** Bumps when the list should reload without any filter field changing (create/update/delete). */
+  const [listRefreshKey, setListRefreshKey] = useState(0);
 
   // Keep internal filter in sync with incoming props.
   const hasInitialFilter = initialFilter !== undefined;
@@ -159,7 +161,14 @@ export function useJobs(initialFilter?: JobsFilter) {
     return () => {
       isMounted = false;
     };
-  }, [filter.status, filter.from, filter.to, filter.page, filter.pageSize]); // Refetch when any filter changes
+  }, [
+    filter.status,
+    filter.from,
+    filter.to,
+    filter.page,
+    filter.pageSize,
+    listRefreshKey,
+  ]);
 
   /**
    * Create or update a job record
@@ -206,9 +215,7 @@ export function useJobs(initialFilter?: JobsFilter) {
         return;
       }
 
-      // Trigger data refresh by updating the filter state
-      // This causes the useEffect to run again and fetch updated data
-      setFilter((prev) => ({ ...prev }));
+      setListRefreshKey((k) => k + 1);
     } catch (err) {
       console.error(err);
       setError("Unexpected error while saving job.");
@@ -249,9 +256,7 @@ export function useJobs(initialFilter?: JobsFilter) {
         return;
       }
 
-      // Trigger data refresh by updating the filter state
-      // This causes the useEffect to run again and fetch updated data
-      setFilter((prev) => ({ ...prev }));
+      setListRefreshKey((k) => k + 1);
     } catch (err) {
       console.error(err);
       setError("Unexpected error while deleting job.");

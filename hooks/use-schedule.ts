@@ -13,6 +13,9 @@ export type CalendarEvent = {
   end_at: string;
   location: string | null;
   notes: string | null;
+  category: string | null;
+  color_key: string | null;
+  customer_id: string | null;
 };
 
 export type ScheduleFilter = {
@@ -28,6 +31,7 @@ export function useSchedule(initialFilter: ScheduleFilter) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<ScheduleFilter>(initialFilter);
+  const [refetchNonce, setRefetchNonce] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -62,7 +66,19 @@ export function useSchedule(initialFilter: ScheduleFilter) {
           return;
         }
 
-        const items = (data as any)?.items ?? [];
+        const raw = (data as any)?.items ?? [];
+        const items: CalendarEvent[] = raw.map((row: Record<string, unknown>) => ({
+          id: row.id as string,
+          type: row.type as CalendarEventType,
+          title: row.title as string,
+          start_at: row.start_at as string,
+          end_at: row.end_at as string,
+          location: (row.location as string | null) ?? null,
+          notes: (row.notes as string | null) ?? null,
+          category: (row.category as string | null) ?? null,
+          color_key: (row.color_key as string | null) ?? null,
+          customer_id: (row.customer_id as string | null) ?? null,
+        }));
         const totalCount = (data as any)?.total ?? 0;
         setEvents(items);
         setTotal(totalCount);
@@ -80,7 +96,7 @@ export function useSchedule(initialFilter: ScheduleFilter) {
     return () => {
       isMounted = false;
     };
-  }, [filter.from, filter.to, filter.page, filter.pageSize]);
+  }, [filter.from, filter.to, filter.page, filter.pageSize, refetchNonce]);
 
   async function upsertEvent(
     input: Omit<CalendarEvent, "id"> & { id?: string },
@@ -100,6 +116,9 @@ export function useSchedule(initialFilter: ScheduleFilter) {
           end_at: input.end_at,
           location: input.location,
           notes: input.notes,
+          category: input.category,
+          color_key: input.color_key,
+          customer_id: input.customer_id,
         },
       });
 
@@ -113,7 +132,7 @@ export function useSchedule(initialFilter: ScheduleFilter) {
         return;
       }
 
-      setFilter((prev) => ({ ...prev }));
+      setRefetchNonce((n) => n + 1);
     } catch (err) {
       console.error(err);
       setError("Unexpected error while saving event.");
@@ -131,4 +150,3 @@ export function useSchedule(initialFilter: ScheduleFilter) {
     upsertEvent,
   };
 }
-

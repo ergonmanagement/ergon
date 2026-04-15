@@ -47,5 +47,61 @@ describe("useCustomers", () => {
 
     expect(result.current.error).toBe("Failed");
   });
+
+  it("refetches the list after upsert so loading does not stay true", async () => {
+    const emptyList = { data: { items: [], total: 0 }, error: null };
+    const saved = { data: { id: "c1" }, error: null };
+    const withCustomer = {
+      data: {
+        items: [
+          {
+            id: "c1",
+            type: "prospect" as const,
+            name: "New Person",
+            company_id: null,
+            company_name: null,
+            email: null,
+            phone: null,
+            address: null,
+            notes: null,
+            source: null,
+          },
+        ],
+        total: 1,
+      },
+      error: null,
+    };
+
+    mockInvoke
+      .mockResolvedValueOnce(emptyList)
+      .mockResolvedValueOnce(saved)
+      .mockResolvedValueOnce(withCustomer);
+
+    const { result } = renderHook(() => useCustomers());
+
+    await act(async () => {});
+
+    expect(result.current.customers).toHaveLength(0);
+    expect(result.current.loading).toBe(false);
+
+    await act(async () => {
+      await result.current.upsertCustomer({
+        type: "prospect",
+        name: "New Person",
+        email: null,
+        phone: null,
+        address: null,
+        notes: null,
+        source: null,
+        company_id: null,
+        company_name: null,
+      });
+    });
+
+    expect(mockInvoke).toHaveBeenCalledTimes(3);
+    expect(result.current.loading).toBe(false);
+    expect(result.current.customers).toHaveLength(1);
+    expect(result.current.customers[0].name).toBe("New Person");
+  });
 });
 

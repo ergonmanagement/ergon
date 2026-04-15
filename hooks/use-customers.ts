@@ -48,6 +48,8 @@ export function useCustomers(initialFilter?: CustomersFilter) {
   const [error, setError] = useState<string | null>(null);
 
   const [filter, setFilter] = useState<CustomersFilter>(initialFilter ?? {});
+  /** Bumps when the list should reload without any filter field changing (create/update). */
+  const [listRefreshKey, setListRefreshKey] = useState(0);
 
   // Props like `type` / `search` from the parent must update `filter`; `useState(initialFilter)`
   // only uses the first render's value, so tabs and search would otherwise never refetch.
@@ -129,7 +131,7 @@ export function useCustomers(initialFilter?: CustomersFilter) {
     return () => {
       isMounted = false;
     };
-  }, [filter.type, filter.search, filter.page, filter.pageSize]); // Refetch when any filter changes
+  }, [filter.type, filter.search, filter.page, filter.pageSize, listRefreshKey]);
 
   /**
    * Create or update a customer record
@@ -173,9 +175,7 @@ export function useCustomers(initialFilter?: CustomersFilter) {
         return;
       }
 
-      // Trigger data refresh by updating the filter state
-      // This causes the useEffect to run again and fetch updated data
-      setFilter((prev) => ({ ...prev }));
+      setListRefreshKey((k) => k + 1);
     } catch (err) {
       console.error(err);
       setError("Unexpected error while saving customer.");

@@ -1,15 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useState, useRef, useEffect } from "react";
 import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useJobs, JobStatus, type Job } from "@/hooks/use-jobs";
+import { useCustomers } from "@/hooks/use-customers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
+import { JobLocationMap } from "../[jobId]/_components/job-location-map";
+
+/** Inlined at build time; must be `NEXT_PUBLIC_*` to exist in the browser. */
+const MAPBOX_PUBLIC_TOKEN =
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? "";
 
 type JobsSortColumn =
   | "customer"
@@ -74,6 +81,94 @@ function getStartOfTodayTimestamp(): number {
   return today.getTime();
 }
 
+/** Searchable customer picker used inside the job create/edit forms. */
+function CustomerPicker({
+  value,
+  onChange,
+}: {
+  value: { id: string; name: string } | null;
+  onChange: (customer: { id: string; name: string } | null) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const { customers } = useCustomers();
+
+  const filtered = customers.filter((c) =>
+    c.name.toLowerCase().includes(query.toLowerCase()) ||
+    (c.email ?? "").toLowerCase().includes(query.toLowerCase())
+  ).slice(0, 20);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  if (value) {
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+        <span className="flex-1 text-foreground">{value.name}</span>
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className="text-muted-foreground hover:text-foreground"
+          aria-label="Remove linked customer"
+        >
+          <X size={14} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <Input
+        placeholder="Search customers by name or email…"
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        autoComplete="off"
+      />
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-card shadow-lg">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-muted-foreground">No customers found</div>
+          ) : (
+            <ul className="max-h-48 overflow-y-auto py-1">
+              {filtered.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted/60 focus:bg-muted/60 outline-none"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      onChange({ id: c.id, name: c.name });
+                      setQuery("");
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="font-medium text-foreground">{c.name}</span>
+                    {c.email && (
+                      <span className="ml-2 text-xs text-muted-foreground">{c.email}</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function JobsClient() {
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
   const [search, setSearch] = useState("");
@@ -82,6 +177,9 @@ export function JobsClient() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedJob, setSelectedJob] = useState<any>(null);
+
+  // Linked customer for the active form
+  const [linkedCustomer, setLinkedCustomer] = useState<{ id: string; name: string } | null>(null);
 
   // Form state for create/edit
   const [formData, setFormData] = useState({
@@ -132,6 +230,7 @@ export function JobsClient() {
       price: "",
       notes: ""
     });
+    setLinkedCustomer(null);
   };
 
   const handleCreate = () => {
@@ -151,16 +250,21 @@ export function JobsClient() {
       price: job.price?.toString() || "",
       notes: job.notes || ""
     });
+    setLinkedCustomer(
+      job.customer_id ? { id: job.customer_id, name: job.customer_name } : null
+    );
     setSelectedJob(job);
     setShowEditDialog(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // When a customer is linked, use their name as the canonical customer_name.
+    const resolvedName = linkedCustomer?.name || formData.customer_name;
     try {
       await upsertJob({
         id: selectedJob?.id,
-        customer_name: formData.customer_name,
+        customer_name: resolvedName,
         service_type: formData.service_type,
         status: formData.status,
         scheduled_start: formData.scheduled_start || null,
@@ -168,7 +272,7 @@ export function JobsClient() {
         address: formData.address || null,
         price: formData.price ? parseFloat(formData.price) : null,
         notes: formData.notes || null,
-        customer_id: null,
+        customer_id: linkedCustomer?.id ?? null,
         source: null
       });
       setShowCreateDialog(false);
@@ -299,6 +403,9 @@ export function JobsClient() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Service
                   </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <span className="sr-only">Open job</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -343,6 +450,15 @@ export function JobsClient() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                       {job.service_type}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <Link
+                        href={`/jobs/${job.id}`}
+                        className="font-medium text-primary hover:underline underline-offset-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        View
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -382,6 +498,15 @@ export function JobsClient() {
                     </div>
                   ) : null}
                 </div>
+                <div className="mt-3 flex justify-end">
+                  <Link
+                    href={`/jobs/${job.id}`}
+                    className="text-sm font-medium text-primary hover:underline underline-offset-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    View job page
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
@@ -399,11 +524,22 @@ export function JobsClient() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="customer_name">Customer Name *</Label>
+              <Label>Link Customer</Label>
+              <CustomerPicker value={linkedCustomer} onChange={setLinkedCustomer} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Linking a customer enables review request emails when the job is marked paid.
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="customer_name">
+                Customer Name *{linkedCustomer && <span className="ml-1 text-xs text-muted-foreground">(from linked customer)</span>}
+              </Label>
               <Input
                 id="customer_name"
-                value={formData.customer_name}
+                value={linkedCustomer ? linkedCustomer.name : formData.customer_name}
                 onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                readOnly={!!linkedCustomer}
+                className={linkedCustomer ? "bg-muted/40 text-muted-foreground" : ""}
                 required
               />
             </div>
@@ -482,7 +618,7 @@ export function JobsClient() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-h-[min(90vh,920px)] w-[calc(100vw-2rem)] max-w-2xl overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Job</DialogTitle>
             <DialogDescription>
@@ -491,11 +627,22 @@ export function JobsClient() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="edit_customer_name">Customer Name *</Label>
+              <Label>Link Customer</Label>
+              <CustomerPicker value={linkedCustomer} onChange={setLinkedCustomer} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Linking a customer enables review request emails when the job is marked paid.
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="edit_customer_name">
+                Customer Name *{linkedCustomer && <span className="ml-1 text-xs text-muted-foreground">(from linked customer)</span>}
+              </Label>
               <Input
                 id="edit_customer_name"
-                value={formData.customer_name}
+                value={linkedCustomer ? linkedCustomer.name : formData.customer_name}
                 onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                readOnly={!!linkedCustomer}
+                className={linkedCustomer ? "bg-muted/40 text-muted-foreground" : ""}
                 required
               />
             </div>
@@ -530,6 +677,34 @@ export function JobsClient() {
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
             </div>
+            {formData.address?.trim() ? (
+              <div className="space-y-2">
+                <Label className="text-foreground">Location map</Label>
+                {MAPBOX_PUBLIC_TOKEN ? (
+                  <JobLocationMap address={formData.address} />
+                ) : (
+                  <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground">
+                    The map does not load until Mapbox is configured. Add{" "}
+                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground">
+                      NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
+                    </code>{" "}
+                    to{" "}
+                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground">
+                      .env.local
+                    </code>
+                    , then stop and run{" "}
+                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground">
+                      npm run dev
+                    </code>{" "}
+                    again (the name must start with{" "}
+                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground">
+                      NEXT_PUBLIC_
+                    </code>
+                    ).
+                  </div>
+                )}
+              </div>
+            ) : null}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit_scheduled_start">Start Date</Label>

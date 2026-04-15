@@ -4,6 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useSchedule } from "@/hooks/use-schedule";
 import { useJobs } from "@/hooks/use-jobs";
+import { useCustomers, type Customer } from "@/hooks/use-customers";
+import {
+  CALENDAR_COLOR_KEYS,
+  calendarEventPillClassesMonth,
+  calendarEventPillClassesWeek,
+} from "@/lib/calendar-colors";
+import { isoToDateTimeLocalValue } from "@/lib/datetime-local";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,27 +22,13 @@ import { Plus, ChevronDown } from "lucide-react";
 
 type ViewMode = "week" | "month";
 
-function getCurrentWeekRange() {
-  const now = new Date();
-  const day = now.getUTCDay(); // 0 = Sunday
-  const diffToMonday = (day + 6) % 7;
-  const monday = new Date(now);
-  monday.setUTCDate(now.getUTCDate() - diffToMonday);
-  monday.setUTCHours(0, 0, 0, 0);
+const CUSTOMER_NONE = "__none__";
+const COLOR_DEFAULT = "__default__";
 
-  const sunday = new Date(monday);
-  sunday.setUTCDate(monday.getUTCDate() + 6);
-  sunday.setUTCHours(23, 59, 59, 999);
+/** Scrollable, top-anchored on small viewports so the close control stays reachable. */
+const SCHEDULE_DIALOG_CONTENT_CLASS =
+  "max-h-[85vh] overflow-y-auto top-[6vh] translate-y-0 sm:top-[50%] sm:translate-y-[-50%] w-[calc(100vw-2rem)] sm:w-full";
 
-  return { from: monday.toISOString(), to: sunday.toISOString() };
-}
-
-function getCurrentMonthRange() {
-  const now = new Date();
-  const first = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
-  const last = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
-  return { from: first.toISOString(), to: last.toISOString() };
-}
 
 // Generate calendar grid for the month
 function generateCalendarDays(year: number, month: number) {
@@ -81,14 +75,15 @@ type DateTimeFieldProps = {
 };
 
 function DateTimeField({ id, label, value, onApply, required }: DateTimeFieldProps) {
-  const [draft, setDraft] = useState(value);
+  const [draft, setDraft] = useState(() => isoToDateTimeLocalValue(value));
 
   useEffect(() => {
-    setDraft(value);
+    setDraft(isoToDateTimeLocalValue(value));
   }, [value]);
 
   function applyDraft() {
-    if (draft !== value) onApply(draft);
+    const baseline = isoToDateTimeLocalValue(value);
+    if (draft !== baseline) onApply(draft);
   }
 
   return (
@@ -111,6 +106,80 @@ function DateTimeField({ id, label, value, onApply, required }: DateTimeFieldPro
   );
 }
 
+function CustomerLinkSelect({
+  id,
+  label,
+  value,
+  onChange,
+  customers,
+  disabled,
+}: {
+  id: string;
+  label: string;
+  value: string | null;
+  onChange: (customerId: string | null) => void;
+  customers: Customer[];
+  disabled?: boolean;
+}) {
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <Select
+        value={value ?? CUSTOMER_NONE}
+        onValueChange={(v) => onChange(v === CUSTOMER_NONE ? null : v)}
+        disabled={disabled}
+      >
+        <SelectTrigger id={id} className="mt-1">
+          <SelectValue placeholder="No linked customer" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={CUSTOMER_NONE}>No linked customer</SelectItem>
+          {customers.map((c) => (
+            <SelectItem key={c.id} value={c.id}>
+              {c.name}
+              {c.company_name ? ` · ${c.company_name}` : ""}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function ColorPresetSelect({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <Select
+        value={value || COLOR_DEFAULT}
+        onValueChange={(v) => onChange(v === COLOR_DEFAULT ? "" : v)}
+      >
+        <SelectTrigger id={id} className="mt-1">
+          <SelectValue placeholder="Default (by type)" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={COLOR_DEFAULT}>Default (by type)</SelectItem>
+          {CALENDAR_COLOR_KEYS.map((k) => (
+            <SelectItem key={k} value={k}>
+              {k.slice(0, 1).toUpperCase() + k.slice(1)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 export function ScheduleClient() {
   const [view, setView] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -127,17 +196,24 @@ export function ScheduleClient() {
     start_at: "",
     end_at: "",
     location: "",
-    notes: ""
+    notes: "",
+    category: "",
+    color_key: "",
+    customer_id: null as string | null,
   });
 
   const [taskFormData, setTaskFormData] = useState({
     title: "",
     start_at: "",
     end_at: "",
-    notes: ""
+    notes: "",
+    category: "",
+    color_key: "",
+    customer_id: null as string | null,
   });
 
   const [jobFormData, setJobFormData] = useState({
+    customer_id: null as string | null,
     customer_name: "",
     company_name: "",
     service_type: "",
@@ -145,7 +221,7 @@ export function ScheduleClient() {
     scheduled_end: "",
     address: "",
     price: "",
-    notes: ""
+    notes: "",
   });
 
   // Calculate date range based on current view and date
@@ -179,6 +255,8 @@ export function ScheduleClient() {
 
   const { upsertJob } = useJobs({});
 
+  const { customers } = useCustomers({ page: 1, pageSize: 300 });
+
   // Form handlers
   const resetEventForm = () => {
     setEventFormData({
@@ -186,7 +264,10 @@ export function ScheduleClient() {
       start_at: "",
       end_at: "",
       location: "",
-      notes: ""
+      notes: "",
+      category: "",
+      color_key: "",
+      customer_id: null,
     });
   };
 
@@ -195,12 +276,16 @@ export function ScheduleClient() {
       title: "",
       start_at: "",
       end_at: "",
-      notes: ""
+      notes: "",
+      category: "",
+      color_key: "",
+      customer_id: null,
     });
   };
 
   const resetJobForm = () => {
     setJobFormData({
+      customer_id: null,
       customer_name: "",
       company_name: "",
       service_type: "",
@@ -208,7 +293,7 @@ export function ScheduleClient() {
       scheduled_end: "",
       address: "",
       price: "",
-      notes: ""
+      notes: "",
     });
   };
 
@@ -220,8 +305,11 @@ export function ScheduleClient() {
         title: eventFormData.title,
         start_at: eventFormData.start_at,
         end_at: eventFormData.end_at,
-        location: eventFormData.location,
-        notes: eventFormData.notes,
+        location: eventFormData.location || null,
+        notes: eventFormData.notes || null,
+        category: eventFormData.category.trim() || null,
+        color_key: eventFormData.color_key || null,
+        customer_id: eventFormData.customer_id,
       });
       setShowEventDialog(false);
       resetEventForm();
@@ -239,7 +327,10 @@ export function ScheduleClient() {
         start_at: taskFormData.start_at,
         end_at: taskFormData.end_at,
         location: null,
-        notes: taskFormData.notes,
+        notes: taskFormData.notes || null,
+        category: taskFormData.category.trim() || null,
+        color_key: taskFormData.color_key || null,
+        customer_id: taskFormData.customer_id,
       });
       setShowTaskDialog(false);
       resetTaskForm();
@@ -261,8 +352,8 @@ export function ScheduleClient() {
         address: jobFormData.address,
         price: jobFormData.price ? parseFloat(jobFormData.price) : null,
         notes: jobFormData.notes,
-        customer_id: null,
-        source: "schedule"
+        customer_id: jobFormData.customer_id,
+        source: "schedule",
       });
       setShowJobDialog(false);
       resetJobForm();
@@ -286,8 +377,11 @@ export function ScheduleClient() {
         title: selectedEvent.title,
         start_at: selectedEvent.start_at,
         end_at: selectedEvent.end_at,
-        location: selectedEvent.location,
-        notes: selectedEvent.notes,
+        location: selectedEvent.location ?? null,
+        notes: selectedEvent.notes ?? null,
+        category: selectedEvent.category ?? null,
+        color_key: selectedEvent.color_key ?? null,
+        customer_id: selectedEvent.customer_id ?? null,
       });
       setShowEditDialog(false);
       setSelectedEvent(null);
@@ -482,10 +576,16 @@ export function ScheduleClient() {
                             {dayEvents.slice(0, 3).map((event, eventIndex) => (
                               <button
                                 type="button"
-                                key={eventIndex}
+                                key={event.id ?? eventIndex}
                                 onClick={() => handleOpenEdit(event)}
-                                className="block w-full text-left text-xs bg-primary/15 text-foreground px-2 py-1 rounded truncate hover:bg-primary/25"
-                                title={event.title}
+                                className={cn(
+                                  "block w-full text-left text-xs px-2 py-1 rounded truncate",
+                                  calendarEventPillClassesMonth(event.color_key, event.type),
+                                )}
+                                title={
+                                  [event.category, event.title].filter(Boolean).join(" · ") ||
+                                  event.title
+                                }
                               >
                                 {event.title}
                               </button>
@@ -549,9 +649,12 @@ export function ScheduleClient() {
                           {dayEvents.map((event, eventIndex) => (
                             <button
                               type="button"
-                              key={eventIndex}
+                              key={event.id ?? eventIndex}
                               onClick={() => handleOpenEdit(event)}
-                              className="block w-full text-left text-xs bg-primary/15 text-foreground px-2 py-2 rounded border-l-2 border-primary hover:bg-primary/25"
+                              className={cn(
+                                "block w-full text-left text-xs px-2 py-2 rounded hover:opacity-95",
+                                calendarEventPillClassesWeek(event.color_key, event.type),
+                              )}
                               title={`${event.title} - ${new Date(event.start_at).toLocaleTimeString()}`}
                             >
                               <div className="font-medium truncate">{event.title}</div>
@@ -579,7 +682,7 @@ export function ScheduleClient() {
 
       {/* Create Event Dialog */}
       <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className={cn("max-w-md", SCHEDULE_DIALOG_CONTENT_CLASS)}>
           <DialogHeader>
             <DialogTitle>Create New Event</DialogTitle>
             <DialogDescription>
@@ -596,6 +699,32 @@ export function ScheduleClient() {
                 required
               />
             </div>
+            <div>
+              <Label htmlFor="event-category">Category</Label>
+              <Input
+                id="event-category"
+                value={eventFormData.category}
+                onChange={(e) =>
+                  setEventFormData({ ...eventFormData, category: e.target.value })
+                }
+                placeholder="e.g. Sales, Personal"
+              />
+            </div>
+            <ColorPresetSelect
+              id="event-color"
+              label="Calendar color"
+              value={eventFormData.color_key}
+              onChange={(next) => setEventFormData({ ...eventFormData, color_key: next })}
+            />
+            <CustomerLinkSelect
+              id="event-customer"
+              label="Link customer (optional)"
+              value={eventFormData.customer_id}
+              onChange={(customerId) =>
+                setEventFormData({ ...eventFormData, customer_id: customerId })
+              }
+              customers={customers}
+            />
             <div>
               <DateTimeField
                 id="event-start"
@@ -647,7 +776,7 @@ export function ScheduleClient() {
 
       {/* Create Task Dialog */}
       <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className={cn("max-w-md", SCHEDULE_DIALOG_CONTENT_CLASS)}>
           <DialogHeader>
             <DialogTitle>Create New Task</DialogTitle>
             <DialogDescription>
@@ -664,6 +793,32 @@ export function ScheduleClient() {
                 required
               />
             </div>
+            <div>
+              <Label htmlFor="task-category">Category</Label>
+              <Input
+                id="task-category"
+                value={taskFormData.category}
+                onChange={(e) =>
+                  setTaskFormData({ ...taskFormData, category: e.target.value })
+                }
+                placeholder="e.g. Admin, Follow-up"
+              />
+            </div>
+            <ColorPresetSelect
+              id="task-color"
+              label="Calendar color"
+              value={taskFormData.color_key}
+              onChange={(next) => setTaskFormData({ ...taskFormData, color_key: next })}
+            />
+            <CustomerLinkSelect
+              id="task-customer"
+              label="Link customer (optional)"
+              value={taskFormData.customer_id}
+              onChange={(customerId) =>
+                setTaskFormData({ ...taskFormData, customer_id: customerId })
+              }
+              customers={customers}
+            />
             <div>
               <DateTimeField
                 id="task-start"
@@ -707,7 +862,7 @@ export function ScheduleClient() {
 
       {/* Create Job Dialog */}
       <Dialog open={showJobDialog} onOpenChange={setShowJobDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className={cn("max-w-md", SCHEDULE_DIALOG_CONTENT_CLASS)}>
           <DialogHeader>
             <DialogTitle>Create New Job</DialogTitle>
             <DialogDescription>
@@ -715,12 +870,38 @@ export function ScheduleClient() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleJobSubmit} className="space-y-4">
+            <CustomerLinkSelect
+              id="job-customer-link"
+              label="Link existing customer (optional)"
+              value={jobFormData.customer_id}
+              onChange={(customerId) => {
+                if (!customerId) {
+                  setJobFormData((p) => ({ ...p, customer_id: null }));
+                  return;
+                }
+                const c = customers.find((x) => x.id === customerId);
+                if (!c) return;
+                setJobFormData((p) => ({
+                  ...p,
+                  customer_id: customerId,
+                  customer_name: c.name,
+                  company_name: c.company_name ?? "",
+                }));
+              }}
+              customers={customers}
+            />
             <div>
               <Label htmlFor="job-customer">Customer Name *</Label>
               <Input
                 id="job-customer"
                 value={jobFormData.customer_name}
-                onChange={(e) => setJobFormData({ ...jobFormData, customer_name: e.target.value })}
+                onChange={(e) =>
+                  setJobFormData({
+                    ...jobFormData,
+                    customer_name: e.target.value,
+                    customer_id: null,
+                  })
+                }
                 required
               />
             </div>
@@ -803,7 +984,7 @@ export function ScheduleClient() {
 
       {/* Edit Existing Calendar Item Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className={cn("max-w-md", SCHEDULE_DIALOG_CONTENT_CLASS)}>
           <DialogHeader>
             <DialogTitle>Edit schedule item</DialogTitle>
             <DialogDescription>
@@ -823,6 +1004,40 @@ export function ScheduleClient() {
                   required
                 />
               </div>
+              <div>
+                <Label htmlFor="edit-event-category">Category</Label>
+                <Input
+                  id="edit-event-category"
+                  value={selectedEvent.category ?? ""}
+                  onChange={(e) =>
+                    setSelectedEvent({
+                      ...selectedEvent,
+                      category: e.target.value.trim() ? e.target.value : null,
+                    })
+                  }
+                  placeholder="e.g. Sales, Personal"
+                />
+              </div>
+              <ColorPresetSelect
+                id="edit-event-color"
+                label="Calendar color"
+                value={selectedEvent.color_key ?? ""}
+                onChange={(next) =>
+                  setSelectedEvent({
+                    ...selectedEvent,
+                    color_key: next ? next : null,
+                  })
+                }
+              />
+              <CustomerLinkSelect
+                id="edit-event-customer"
+                label="Link customer (optional)"
+                value={selectedEvent.customer_id ?? null}
+                onChange={(customerId) =>
+                  setSelectedEvent({ ...selectedEvent, customer_id: customerId })
+                }
+                customers={customers}
+              />
               <DateTimeField
                 id="edit-event-start"
                 label="Start Date & Time *"

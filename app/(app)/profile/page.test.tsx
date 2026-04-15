@@ -22,6 +22,7 @@ jest.mock("@/hooks/use-profile", () => ({
     },
     loading: false,
     error: null,
+    saveProfileNames: jest.fn().mockResolvedValue({ error: null }),
   }),
 }));
 
@@ -54,9 +55,12 @@ describe("Profile page", () => {
     expect(screen.getByTestId("profile-image-upload")).toBeInTheDocument();
   });
 
-  it("renders profile data from useProfile", () => {
+  it("renders profile data from useProfile in editable fields", () => {
     render(<ProfilePage />);
-    expect(screen.getByText("John")).toBeInTheDocument();
-    expect(screen.getByText("Doe")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("John")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Doe")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Save personal info" }),
+    ).toBeInTheDocument();
   });
 });

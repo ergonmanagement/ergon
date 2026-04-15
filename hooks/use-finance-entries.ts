@@ -57,6 +57,8 @@ export function useFinanceEntries(initialFilter: FinanceFilter) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FinanceFilter>(initialFilter);
+  /** Bumps when data should reload without filter primitives changing (e.g. after save). */
+  const [refetchNonce, setRefetchNonce] = useState(0);
 
   // Keep internal filter in sync with incoming props.
   const incomingFrom = initialFilter.from;
@@ -148,7 +150,7 @@ export function useFinanceEntries(initialFilter: FinanceFilter) {
     return () => {
       isMounted = false;
     };
-  }, [filter.from, filter.to, filter.type]); // Dependency array - refetch when filters change
+  }, [filter.from, filter.to, filter.type, refetchNonce]); // Refetch when filters or data changes (nonce after save)
 
   /**
    * Create or update a finance entry
@@ -192,9 +194,8 @@ export function useFinanceEntries(initialFilter: FinanceFilter) {
         return;
       }
 
-      // Trigger data refresh by updating the filter state
-      // This causes the useEffect to run again and fetch updated data
-      setFilter((prev) => ({ ...prev }));
+      // Refetch list: filter primitives may be unchanged, so a nonce drives the effect.
+      setRefetchNonce((n) => n + 1);
     } catch (err) {
       console.error(err);
       setError("Unexpected error while saving finance entry.");

@@ -36,7 +36,7 @@ describe("MarketingClient", () => {
   });
 
   it("renders generate and calls generateAsset on submit", async () => {
-    mockGenerateAsset.mockResolvedValue(undefined);
+    mockGenerateAsset.mockResolvedValue(true);
     render(<MarketingClient />);
 
     fireEvent.click(screen.getByRole("button", { name: /generate marketing content/i }));
@@ -60,7 +60,7 @@ describe("MarketingClient", () => {
   });
 
   it("calls regenerate via generateAsset", async () => {
-    mockGenerateAsset.mockResolvedValue(undefined);
+    mockGenerateAsset.mockResolvedValue(true);
     render(<MarketingClient />);
 
     fireEvent.click(screen.getByRole("button", { name: /^regenerate$/i }));
@@ -70,5 +70,19 @@ describe("MarketingClient", () => {
       channel: "social_post",
       context: "",
     });
+  });
+
+  it("clears optional context after successful generate", async () => {
+    mockGenerateAsset.mockResolvedValue(true);
+    render(<MarketingClient />);
+
+    const textarea = screen.getByLabelText(/optional context/i);
+    fireEvent.change(textarea, { target: { value: "Summer promo in Utah" } });
+    expect(textarea).toHaveValue("Summer promo in Utah");
+
+    fireEvent.click(screen.getByRole("button", { name: /generate marketing content/i }));
+    await act(async () => {});
+
+    expect(textarea).toHaveValue("");
   });
 });

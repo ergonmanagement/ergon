@@ -45,6 +45,15 @@ type SupabaseClient = ReturnType<typeof createClient>;
 
 type CalendarEventType = "event" | "task";
 
+const ALLOWED_COLOR_KEYS = new Set([
+  "sky",
+  "emerald",
+  "amber",
+  "rose",
+  "violet",
+  "slate",
+]);
+
 type UpsertEventRequest = {
   id?: string;
   type: CalendarEventType;
@@ -53,6 +62,9 @@ type UpsertEventRequest = {
   end_at: string;
   location?: string;
   notes?: string;
+  category?: string | null;
+  color_key?: string | null;
+  customer_id?: string | null;
 };
 
 const corsHeaders: HeadersInit = {
@@ -189,6 +201,32 @@ serve(async (req: Request) => {
       );
     }
 
+    const categoryValue =
+      body.category === undefined || body.category === null
+        ? null
+        : String(body.category).trim() || null;
+
+    const colorKeyValue =
+      body.color_key === undefined ||
+      body.color_key === null ||
+      body.color_key === ""
+        ? null
+        : body.color_key;
+
+    if (colorKeyValue != null && !ALLOWED_COLOR_KEYS.has(colorKeyValue)) {
+      return jsonResponse(
+        { error: "Invalid color_key", code: "VALIDATION_COLOR_KEY" },
+        { status: 400 },
+      );
+    }
+
+    const customerIdValue =
+      body.customer_id === undefined ||
+      body.customer_id === null ||
+      body.customer_id === ""
+        ? null
+        : body.customer_id;
+
     const payload: Record<string, unknown> = {
       type: body.type,
       title: body.title,
@@ -196,6 +234,9 @@ serve(async (req: Request) => {
       end_at: body.end_at,
       location: body.location ?? null,
       notes: body.notes ?? null,
+      category: categoryValue,
+      color_key: colorKeyValue,
+      customer_id: customerIdValue,
     };
 
     let result;

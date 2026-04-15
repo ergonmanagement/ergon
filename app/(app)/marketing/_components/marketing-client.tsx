@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppPageHeader } from "@/components/layout/app-page-header";
 import { useMarketing } from "@/hooks/use-marketing";
 import type { MarketingChannel } from "@/lib/marketing/types";
@@ -44,13 +44,25 @@ export function MarketingClient() {
   const pageSize = filter.pageSize ?? 10;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
+  useEffect(() => {
+    function onPageShow(ev: PageTransitionEvent) {
+      if (ev.persisted) {
+        setContext("");
+      }
+    }
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
-    await generateAsset({ channel, context });
+    const ok = await generateAsset({ channel, context });
+    if (ok) setContext("");
   }
 
   async function handleRegenerate() {
-    await generateAsset({ channel, context });
+    const ok = await generateAsset({ channel, context });
+    if (ok) setContext("");
   }
 
   async function copyContent(text: string, id: string) {

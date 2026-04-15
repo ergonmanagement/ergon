@@ -110,13 +110,15 @@ describe("useMarketing", () => {
 
     await act(async () => {});
 
+    let ok = false;
     await act(async () => {
-      await result.current.generateAsset({
+      ok = await result.current.generateAsset({
         channel: "email",
         context: "",
       });
     });
 
+    expect(ok).toBe(true);
     expect(mockInvoke).toHaveBeenCalledWith(
       "marketing",
       expect.objectContaining({
@@ -145,13 +147,15 @@ describe("useMarketing", () => {
 
     await act(async () => {});
 
+    let ok = true;
     await act(async () => {
-      await result.current.generateAsset({
+      ok = await result.current.generateAsset({
         channel: "sms",
         context: "x",
       });
     });
 
+    expect(ok).toBe(false);
     expect(result.current.error).toBe("bad");
   });
 });
